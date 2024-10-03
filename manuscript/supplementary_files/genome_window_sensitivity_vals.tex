@@ -1,0 +1,274 @@
+\documentclass[10pt,letterpaper]{article}
+\usepackage[top=1in,left=1in,right=1in, bottom=1in]{geometry}
+
+% amsmath and amssymb packages, useful for mathematical formulas and symbols
+\usepackage{amsmath,amssymb}
+
+% textcomp package and marvosym package for additional characters
+\usepackage{textcomp,marvosym}
+
+% line numbers
+\usepackage[right]{lineno}
+
+% easier turning on/off of includegraphics
+\usepackage{ifthen}
+\newboolean{includefigs}
+\setboolean{includefigs}{true} % true/false
+
+% ligatures disabled
+\usepackage[nopatch=eqnum]{microtype}
+\DisableLigatures[f]{encoding = *, family = * }
+
+% Bold the 'Figure #' in the caption and separate it from the title/caption with a period
+% Captions will be left justified
+\usepackage[aboveskip=1pt,labelfont=bf,labelsep=period,justification=raggedright,singlelinecheck=off]{caption}
+\renewcommand{\figurename}{Fig}
+\renewcommand{\thefigure}{S.G.\arabic{figure}}
+\renewcommand{\thetable}{S.G.\arabic{table}}
+
+
+% create \thickcline for thick horizontal lines of variable length
+\newlength\savedwidth
+\newcommand\thickcline[1]{%
+  \noalign{\global\savedwidth\arrayrulewidth\global\arrayrulewidth 2pt}%
+  \cline{#1}%
+  \noalign{\vskip\arrayrulewidth}%
+  \noalign{\global\arrayrulewidth\savedwidth}%
+}
+
+% \thickhline command for thick horizontal lines that span the table
+\newcommand\thickhline{\noalign{\global\savedwidth\arrayrulewidth\global\arrayrulewidth 2pt}%
+\hline
+\noalign{\global\arrayrulewidth\savedwidth}}
+
+% Remove this for final submission, do not include graphics
+\usepackage{graphicx} % Required for inserting images
+
+
+% Use nameref to cite supporting information files (see Supporting Information section for more info)
+\usepackage{nameref,hyperref}
+
+
+\usepackage{datatool}
+\DTLsetseparator{,}% Set the separator between the columns.
+% todo add statistics file directly into this document
+\DTLloaddbtex{\mydata}{../../output/statistics.dbtex}
+\newcommand{\var}[1]{\DTLfetch{\mydata}{labels}{#1}{vals}}
+
+
+\title{Quantifying prevalence and risk factors of HIV multiple infection in Uganda from cross-sectional population-based deep-sequence data}
+
+\begin{document}
+%TITLE_VPSACE
+
+% Title must be 250 characters or less.
+\begin{flushleft}
+
+{\Large\textbf\newline{Quantifying prevalence and risk factors of HIV multiple infection in Uganda from cross-sectional population-based deep-sequence data \\ \medskip \large Supplementary File 5: Sensitivity of results to choice of non-overlapping genome windows} 
+%
+%
+% Please use "sentence case" for title and headings (capitalize only the first word in a title (or heading), the first word in a subtitle (or subheading), and any proper nouns).
+}
+\newline
+% Insert author names, affiliations and corresponding author email (do not include titles, positions, or degrees).
+\\
+Michael A. Martin\textsuperscript{1,$\dagger$},
+Andrea Brizzi\textsuperscript{2},
+Xiaoyue Xi\textsuperscript{2,3},
+Ronald Moses Galiwango\textsuperscript{4},
+Sikhulile Moyo\textsuperscript{5,6},
+Deogratius Ssemwanga\textsuperscript{7,8}
+Alexandra Blenkinsop\textsuperscript{2},
+Andrew D. Redd\textsuperscript{9,10,11},
+Lucie Abeler-Dörner\textsuperscript{12},
+Christophe Fraser\textsuperscript{12},
+Steven J. Reynolds\textsuperscript{4,9,10},
+Thomas C. Quinn\textsuperscript{4,9,10},
+Joseph Kagaayi\textsuperscript{4,13},
+David Bonsall\textsuperscript{14},
+David Serwadda\textsuperscript{4},
+Gertrude Nakigozi\textsuperscript{4},
+Godfrey Kigozi\textsuperscript{4},
+M. Kate Grabowski\textsuperscript{1,4,15,$\dagger$},
+Oliver Ratmann\textsuperscript{2,$\dagger$},
+with the PANGEA-HIV Consortium and the Rakai Health Sciences Program
+\\
+\bigskip
+\textbf{1} Department of Pathology, Johns Hopkins School of Medicine, Baltimore, MD, USA
+\\
+\textbf{2} Department of Mathematics, Imperial College London, London, United Kingdom
+\\
+\textbf{3} Medical Research Council Biostatistics Unit, University of Cambridge, Cambridge, UK \\
+
+\textbf{4} Rakai Health Sciences Program, Kalisizo, Uganda \\
+
+\textbf{5} Botswana Harvard AIDS Institute Partnership, Botswana Harvard HIV Reference Laboratory, Gaborone, Botswana \\
+
+\textbf{6} Harvard T.H. Chan School of Public Health, Boston, MA, USA \\
+
+\textbf{7} Medical Research Council/Uganda Virus Research Institute and London School of Hygiene and Tropical Medicine Uganda Research Unit, Entebbe, Uganda \\
+
+\textbf{8} Uganda Virus Research Institute, Entebbe, Uganda \\
+
+\textbf{9} Department of Medicine, Johns Hopkins School of Medicine, Baltimore, MD, USA
+\\
+\textbf{10} Division of Intramural Research, National Institute of Allergy and Infectious Diseases, National Institutes of Health, Bethesda, MD, USA
+\\
+\textbf{11} Institute of Infectious Disease and Molecular Medicine, University of Cape Town, Cape Town, South Africa
+\\
+\textbf{12} Pandemic Sciences Institute, Nuffield Department of Medicine, University of Oxford, Oxford, UK \\
+
+\textbf{13} Makerere University School of Public Health, Kampala, Uganda \\
+
+\textbf{14} Wellcome Centre for Human Genetics, Nuffield Department of Medicine, University of Oxford, Oxford, UK \\
+
+\textbf{15} Department of Epidemiology, Johns Hopkins Bloomberg School of Public Health, Baltimore, MD, USA \\
+
+\bigskip
+% Use the asterisk to denote corresponding authorship and provide email address in note below.
+$\dagger$ Corresponding authors mmart108@jhmi.edu, mgrabow2@jhu.edu, oliver.ratmann@imperial.ac.uk 
+\end{flushleft}
+
+\section{Choice of genome window}
+Phylogenetic trees from the HIV deep-sequence reads generated from 2,029 Rakai Community Cohort Study participants living with viremic HIV using \textit{phyloscanner}. In total, phylogenetic trees were inferred using data from 287 250 base pair (bp) overlapping windows with a 25 bp step between windows. To generate a set of independent data points from each sequenced participant-visit we first downsampled the 287 overlapping windows to a set of 29 250 bp windows beginning at position 800 in the HXB2 (GenBank: K03455.1) genome.  Summarized data in the form of the genome coverage in the phyloscanner output ($N^{obs}_i$) and the number of windows with multiple phylogenetic subgraphs ($MI^{obs}_i$) was highly correlated between the set of full windows and the set of non-overlapping windows (Pearson's $\rho=$ 1, 0.97, respectively, Genome Window Fig~\ref{all_uniq_corr}).
+
+\begin{figure}[!ht]
+ \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/all_uniq_corr.pdf}}{}
+\caption{{\bf Correlation between summary statistics from within-host deep sequence phylogenies from all genome windows and non-overlapping windows generated from \protect 2,029 Rakai Community Cohort Study living with viremic HIV.} (A) Number of windows with phyloscanner output for each participant-visit. (B) Number of windows with multiple phylogenetic subgraphs for each participant-visit.}
+\label{all_uniq_corr}
+\end{figure}
+
+
+\section{Alternate set of non-overlapping windows}
+Based on the window size and window step size, there are 10 potential sets of non-overlapping windows that could have been chosen to generate a set of independent data-points for each sequenced participant visits. To assess the sensitivity of our results to the choice of non-overlapping windows we alternatively downsampled the data to the set of non-overlapping 250 bp windows beginning at position 950 in the HXB2 genome. Genome coverage and the number of windows with multiple phylogenetic subgraphs was highly correlated between the two sets of non-overlapping windows (Pearson's $\rho=$ 0.99, 0.94, respectively).
+
+\begin{figure}[!ht]
+ \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/uniq_uniq_alt_corr.pdf}}{}
+\caption{{\bf Correlation between summary statistics from within-host deep sequence phylogenies from all genome windows and non-overlapping windows generated from \protect 2,029 Rakai Community Cohort Study participant-visits living with viremic HIV.} (A) Number of windows with phyloscanner output for each participant-visit. (B) Number of windows with multiple phylogenetic subgraphs for each participant-visit.}
+\label{uniq_uniq_alt_corr}
+\end{figure}
+
+\section{Sensitivity of results to non-overlapping windows}
+Finally, we fit our inference model accounting for partial sequencing success, false negative multiple subgraph windows, and false positive multiple subgraph windows to data from the two sets of non-overlapping genome windows (Table~\ref{empirical_full_table}-\ref{empirical_full_alt_table}). We note that parameter estimates from the two model fits are highly similar, indicating that our results are not particularly sensitive to the exact choice of genome window sets. 
+
+
+\begin{table}[hbp!]
+%\begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
+\centering
+\begin{tabular}[t]{|l|c|c|c|c|c|}
+\hline
+Parameter & Prior & Median (95\% HPD) & Bulk ESS & Tail ESS & $\hat{R}$ \\ \thickhline
+$\alpha_0$ & Normal(0,$2^2$) & 
+  -0.08 
+    (-0.18, 0.01) & 
+  1094.34 & 
+  2116.52 & 
+  1 \\ \hline
+  $\alpha^{bait}$ & Normal(0,$2^2$) & 
+  2.61
+    (2.45, 2.76) & 
+  1522.61 & 
+  3106.93 & 
+  1 \\ \hline
+  $\alpha^{amplicon-vl}$ & Normal(0,$2^2$) & 
+  0.85
+    (0.76, 0.95) & 
+  1513.14 & 
+  2991.73 & 
+  1 \\ \hline
+  $\alpha^{bait-vl}$ & Normal(0,$2^2$) & 
+  0.85
+    (0.76, 0.95) & 
+  1513.14 & 
+  2991.73 & 
+  1 \\ \hline
+$\sigma_\alpha$ & Half-Cauchy(0,1) & 
+  1.52
+    (1.45, 1.59) & 
+  4631.32 & 
+  6140 &
+  1 \\ \hline
+$\delta_0$ & Normal(0,$3.16^2$) & 
+  -2.79
+    (-3.03, -2.56) & 
+  7236.45 & 
+  4682.27 & 
+  1 \\ \hline
+logit($\lambda$) & Normal(0,1) & 
+  0.29
+    (0.12, 0.47) & 
+  5004.3 & 
+  5833.33 & 
+  1 \\ \hline
+logit($\epsilon$) & Normal(0,1) & 
+  -5.73
+    (-5.96, -5.5) & 
+  4917.44 & 
+  5128.91 & 
+  1 \\ \hline
+\end{tabular}
+\caption{{\bf Parameter estimates for full model fit to deep sequence data from \protect 2,029 RCCS participants living with viremic HIV.} ESS = effective sample size. HPD = highest posterior density. }
+\label{empirical_full_table}
+\end{table}
+
+
+\begin{table}[hbp!]
+%\begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
+\centering
+\begin{tabular}[t]{|l|c|c|c|c|c|}
+\hline
+Parameter  & Prior & Median (95\% HPD) & Bulk ESS & Tail ESS & $\hat{R}$ \\ \thickhline
+$\alpha_0$ & Normal(0,$2^2$) &
+  -0.14 
+    (-0.24, -0.05) & 
+  1543.99 & 
+  2884.32 & 
+  1 \\ \hline
+  $\alpha^{bait}$ & Normal(0,$2^2$) &
+  2.68
+    (2.52, 2.84) & 
+  1949.32 & 
+  3238.59 & 
+  1 \\ \hline
+  $\alpha^{amplicon-vl}$ & Normal(0,$2^2$) &
+  0.84
+    (0.74, 0.94) & 
+  1391.82 & 
+  2530.72 & 
+  1 \\ \hline
+  $\alpha^{bait-vl}$ & Normal(0,$2^2$) &
+  1.52
+    (1.4, 1.65) & 
+  2138.08 & 
+  3570.24 & 
+  1 \\ \hline
+$\sigma_\alpha$ & Half-Cauchy(0,1) & 
+  1.5
+    (1.44, 1.57) & 
+  4984.07 & 
+  5920.38 &
+  1 \\ \hline
+$\delta_0$ & Normal(0,$3.16^2$) & 
+  -2.76
+    (-3, -2.54) & 
+  7571.4 & 
+  5842.81 & 
+  1 \\ \hline
+logit($\lambda$) & Normal(0,1) & 
+  0.48
+    (0.32, 0.64) & 
+  6901.83 & 
+  6604.32 & 
+  1 \\ \hline
+logit($\epsilon$) & Normal(0,1) & 
+  -5.83
+    (-6.08, -5.58) & 
+  4772.54 & 
+  6006.13 & 
+  1 \\ \hline
+\end{tabular}
+\caption{{\bf Parameter estimates for full model fit to deep sequence data from \protect 2,029 RCCS participants living with viremic HIV from alternative non-overlapping genome windows.} ESS = effective sample size. HPD = highest posterior density. }
+\label{empirical_full_alt_table}
+\end{table}
+
+\end{document}
