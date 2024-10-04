@@ -77,7 +77,7 @@ bash scripts/plot_empirical_model_fits.sh
 #### ------------------------------ ####
 awk -F'\t' '{print $2}' output/211220_allreads_phsc_all_subgraphs_refs.tsv | \
 	sort | uniq | sed 's/REF_//g' | grep -v ref | grep -v "^$" \
-	> manuscript/supplementary_files/file_s1.txt
+	> manuscript/supplementary_files/file_s2.txt
 
 
 #### --------------------------------------- ####
