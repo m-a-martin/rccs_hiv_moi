@@ -33,7 +33,8 @@ Rscript scripts/run_stan.R \
 Rscript scripts/run_stan.R \
 	--dat simulations/full_simulation.tsv \
 	--stan stan/full_model.stan \
-	--seqDesignMatrix "scaled_log10_vl_obs"
+	--seqDesignMatrix "scaled_log10_vl_obs" \
+	--risks "TRUE" 
 
 
 #### ------------------------------- ####

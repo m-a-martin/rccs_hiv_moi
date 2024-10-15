@@ -5,6 +5,7 @@ suppressMessages(require(HDInterval))
 suppressMessages(require(posterior))
 suppressMessages(source('scripts/utils.R'))
 
+
 scale_vars = function(scale_vars, d){
   # scales numeric variables to mean 0 and sd 1
   if (!all(is.na(scale_vars))){
@@ -223,15 +224,31 @@ p = add_argument(p, "--riskRatios", nargs=Inf,  help='post hoc calcualtion of ri
 #### OUTPUT SETTINGS ####
 p = add_argument(p, "--outAppend", help='additional string to append to out name', default='')
 args = parse_args(p)
+
+#args$dat = "output/211220_allreads_phsc_all_subgraphs_format_par.tsv"
+#args$inputType = "full"
+#args$stan = "stan/extended_model_hsp.stan"
+#args$miDesignMatrix =c("round", "male_circumcision", "comm_type",
+#  "sequencing_technology", "comm_type:sex", "comm_type:married", "comm_type:age_cat_coarse",
+#  "comm_type:in_migrant", "comm_type:barworker")
+#args$seqDesignMatrix =c("sequencing_technology", "sequencing_technology:log10_copies")
+#args$scaleVars = 'log10_copies:sequencing_technology'
+#args$risks = c("comm_type == 'inland'", "comm_type == 'fishing'")
+#args$riskRatios =c("comm_type == 'fishing':comm_type == 'inland'")
+#args$outAppend = "var_select"
+
 #args$dat = "output/211220_allreads_phsc_all_subgraphs_format_par.tsv"
 #args$inputType = "full"
 #args$stan = "stan/full_model.stan"
-#args$seqDesignMatrix = c("sequencing_technology", "sequencing_technology:log10_copies")
-#args$scaleVars = c("log10_copies:sequencing_technology")
+#args$seqDesignMatrix =c("sequencing_technology", "sequencing_technology:log10_copies")
+#args$scaleVars =c("log10_copies:sequencing_technology")
+#args$risks =c("TRUE")
+#args$outAppend = "test"
 
 out = run_stan(args)
 fit = out$fit
-#fit = readRDS('fit/211220_allreads_phsc_all_subgraphs_par_format_extended_model_comm_type.Rds')
+d_f = out$d_f %>% ungroup() %>% mutate(idx = seq(1,n()))
+#fit = readRDS('fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_hsp_var_select.Rds')
 #fit = readRDS('fit/extended_simulation_extended_model_hsp_.Rds')
 # save input as Rds file
 
@@ -279,48 +296,103 @@ if (!file.exists('fit/')){
 #### POST-HOC CALCULATIONS ####
 #args$risks = c('logit_prob_MI+logit_prob_MI_coeffs[1]')
 # add desired risks, if any
+# get design matrix 
+ind_prob_MI = as_tibble(fit$draws(
+        'ind_log_prob_mi',
+        inc_warmup = FALSE,
+        format = "draws_df")) %>%
+    mutate(cit = seq(1,n())) %>%
+    pivot_longer(-cit) %>%
+    filter(name != ".iteration" & 
+      name != '.draw' & 
+      name != '.chain') %>%
+    mutate(idx = gsub("\\]", "", gsub("ind_log_prob_mi\\[", "", name))) %>%
+    select(-name) %>%
+    mutate(value = exp(value))
+
+prob_MI = as_tibble(fit$draws(
+      'prob_MI',
+      inc_warmup = FALSE,
+      format = "draws_df")) %>%
+    mutate(cit = seq(1,n())) %>%
+    pivot_longer(-cit) %>%
+    filter(name != ".iteration" & 
+      name != '.draw' & 
+      name != '.chain') %>%
+    mutate(idx = gsub("\\]", "", gsub("prob_MI\\[", "", name))) %>%
+    select(-name)
+
 if (!all(is.na(args$risks))){
   for (i in args$risks){
-    i_split = str_split(i, "\\+", simplify=TRUE)
-    fit_sum = bind_rows(
-      fit_sum, 
-      fit_draws %>% filter(name %in% i_split) %>%
+    i_ind_prob_MI = ind_prob_MI %>% 
+      filter(idx %in% (d_f %>% filter(eval(parse(text=i))))$idx)
+    i_prob_MI = prob_MI  %>% 
+      filter(idx %in% (d_f %>% filter(eval(parse(text=i))))$idx)
+    fit_sum = bind_rows(fit_sum, i_ind_prob_MI %>% 
         group_by(cit) %>%
-        summarise(value = inv_logit(sum(value)), .groups="drop") %>%
-        summarise(get_hpd(value) %>%
+        summarise(mean_value = mean(value)) %>%
+        summarise(get_hpd(mean_value) %>%
             mutate(
-              name = paste('risk_', i, sep=''),
-              median = median(value),
-              bulk_ess = ess_bulk(value),
-              tail_ess = ess_tail(value),
-              rhat = rhat(value))))
+              name = paste('sample_risk_', i, sep=''),
+              median = median(mean_value),
+              bulk_ess = ess_bulk(mean_value),
+              tail_ess = ess_tail(mean_value),
+              rhat = rhat(mean_value))))
+    fit_sum = bind_rows(fit_sum, i_prob_MI %>% 
+        group_by(cit) %>%
+        summarise(mean_value = mean(value)) %>%
+        summarise(get_hpd(mean_value) %>%
+            mutate(
+              name = paste('pop_risk_', i, sep=''),
+              median = median(mean_value),
+              bulk_ess = ess_bulk(mean_value),
+              tail_ess = ess_tail(mean_value),
+              rhat = rhat(mean_value))))
   }
 }
 
-#args$riskRatios = c('logit_prob_MI+logit_prob_MI_coeffs[1]:logit_prob_MI')
+
 if (!all(is.na(args$riskRatios))){
   for (i in args$riskRatios){
     i_split = str_split(i, ":", simplify=TRUE)
-    num_split = str_split(i_split[1], "\\+", simplify=TRUE)
-    denom_split = str_split(i_split[2], "\\+", simplify=TRUE)
+    num_ind_prob_MI = ind_prob_MI %>% 
+      filter(idx %in% (d_f %>% filter(eval(parse(text=i_split[1]))))$idx) %>%
+      group_by(cit) %>%
+        summarise(mean_value = mean(value))
+    num_prob_MI = prob_MI  %>% 
+      filter(idx %in% (d_f %>% filter(eval(parse(text=i_split[1]))))$idx) %>%
+       group_by(cit) %>%
+        summarise(mean_value = mean(value))
+    denom_ind_prob_MI = ind_prob_MI %>% 
+      filter(idx %in% (d_f %>% filter(eval(parse(text=i_split[2]))))$idx) %>%
+       group_by(cit) %>%
+        summarise(mean_value = mean(value))
+    denom_prob_MI = prob_MI  %>% 
+      filter(idx %in% (d_f %>% filter(eval(parse(text=i_split[2]))))$idx) %>%
+       group_by(cit) %>%
+        summarise(mean_value = mean(value))
     fit_sum = bind_rows(
       fit_sum,
-      fit_draws %>% filter(name %in% num_split) %>%
-        group_by(cit) %>%
-        summarise(num_value = sum(value), .groups='drop') %>%
-        left_join(
-          fit_draws %>% filter(name %in% denom_split) %>%
-            group_by(cit) %>%
-            summarise(denom_value = sum(value), .groups='drop'),
-          by=c('cit')) %>%
-        mutate(value = inv_logit(num_value)/inv_logit(denom_value)) %>%
+      num_ind_prob_MI %>% left_join(denom_ind_prob_MI, by=c('cit')) %>%
+        mutate(value = mean_value.x / mean_value.y) %>%
         summarise(get_hpd(value) %>%
-          mutate(
-            name = paste('rr_', i, sep=''),
-            median = median(value),
-            bulk_ess = ess_bulk(value),
-            tail_ess = ess_tail(value),
-            rhat = rhat(value))))
+        mutate(
+          name = paste('ind_rr_', i, sep=''),
+          median = median(value),
+          bulk_ess = ess_bulk(value),
+          tail_ess = ess_tail(value),
+          rhat = rhat(value))))
+    fit_sum = bind_rows(
+      fit_sum,
+      num_prob_MI %>% left_join(denom_prob_MI, by=c('cit')) %>%
+        mutate(value = mean_value.x / mean_value.y) %>%
+        summarise(get_hpd(value) %>%
+        mutate(
+          name = paste('pop_rr_', i, sep=''),
+          median = median(value),
+          bulk_ess = ess_bulk(value),
+          tail_ess = ess_tail(value),
+          rhat = rhat(value))))
   }
 }
 
