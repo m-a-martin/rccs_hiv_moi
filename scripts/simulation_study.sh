@@ -33,8 +33,7 @@ Rscript scripts/run_stan.R \
 Rscript scripts/run_stan.R \
 	--dat simulations/full_simulation.tsv \
 	--stan stan/full_model.stan \
-	--seqDesignMatrix "scaled_log10_vl_obs" \
-	--risks "TRUE" 
+	--seqDesignMatrix "scaled_log10_vl_obs"
 
 
 #### ------------------------------- ####
@@ -48,7 +47,7 @@ for delta in 0 0.05 0.10 0.20; do
 	sensitivity_simulation=$(Rscript scripts/simulation_model.R \
 		--prob_MI_fpr 0.01 \
 		--prob_MI_fnr 0.3 \
-		--prob_MI ${delta} \
+		--prob_MI_baseline ${delta} \
 		--out sensitivity/full_delta${delta})
 	# 3B. fit full model to sensitivity simulation
 	Rscript scripts/run_stan.R \
@@ -67,7 +66,7 @@ for fpr in 0 0.005 0.01 0.05; do
 	sensitivity_simulation=$(Rscript scripts/simulation_model.R \
 		--prob_MI_fpr $fpr \
 		--prob_MI_fnr 0.3 \
-		--prob_MI 0.05 \
+		--prob_MI_baseline 0.05 \
 		--out sensitivity/full_fpr${fpr})
 	# 4B. fit full model to sensitivity simulation
 	Rscript scripts/run_stan.R \
@@ -86,7 +85,7 @@ for fnr in 0.1 0.2 0.3 0.4; do
 	sensitivity_simulation=$(Rscript scripts/simulation_model.R \
 		--prob_MI_fpr 0.01 \
 		--prob_MI_fnr $fnr \
-		--prob_MI 0.05 \
+		--prob_MI_baseline 0.05 \
 		--out sensitivity/full_fnr${fnr})
 	# 5B. fit full model to sensitivity simulation
 	Rscript scripts/run_stan.R \
@@ -118,6 +117,6 @@ Rscript scripts/run_stan.R \
 		risk_factor_MI_3 risk_factor_MI_4 \
 		risk_factor_MI_5 \
 	--seqDesignMatrix "scaled_log10_vl_obs" \
-	--riskRatios 'logit_prob_MI+w[1]:logit_prob_MI'
+	--populationRiskRatios "risk_factor_MI_1=1:risk_factor_MI_1=0"
 
 

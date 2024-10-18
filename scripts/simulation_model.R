@@ -34,7 +34,7 @@ simulate_data = function(args){
 			floor(args$prob_MI_risk_factor*n_w_risk), 
 			replace=F)] = 1
 		tmp_mi[tmp == 0][sample(1:n_wo_risk,
-			floor(args$prob_MI*n_wo_risk), 
+			floor(args$prob_MI_baseline*n_wo_risk), 
 			replace=F)] = 1
 		# if null risk factors then add those
 		if (args$null_risk_factors > 0){
@@ -47,7 +47,7 @@ simulate_data = function(args){
 			}	
 		}
 	}else{
-		tmp_mi[sample(1:nrow(sd), floor(nrow(sd) * args$prob_MI), replace=F)] = 1
+		tmp_mi[sample(1:nrow(sd), floor(nrow(sd) * args$prob_MI_baseline), replace=F)] = 1
 	}
 	sd["has_MI"] = tmp_mi
 	simulate_window_dat = function(N, seq_success, fpr, fnr, has_MI){
@@ -93,7 +93,7 @@ p <- add_argument(p, "--logit_seq_prob_lvl_effect",
 p <- add_argument(p, "--logit_prob_seq_ind_sd", 
 	help="standard deviation on inidividual variation of sequencing success", 
 	nargs=1, type='double', default=1)
-p <- add_argument(p, "--prob_MI", help="population prevalence of multiple infection", 
+p <- add_argument(p, "--prob_MI_baseline", help="population prevalence of multiple infection", 
 	nargs=1, type='double', default=0.05)
 p <- add_argument(p, "--prob_MI_fpr", help="multiple infection false positive rate", 
 	nargs=1, type='double', default=0)
@@ -113,7 +113,7 @@ p <- add_argument(p, "--out", help="output file name",
 	nargs=1, type='character')
 args <- parse_args(p)
 
-args$logit_prob_MI = logit(args$prob_MI)
+args$logit_prob_MI = logit(args$prob_MI_baseline)
 
 if (!file.exists('simulations/')){
 	dir.create('simulations')	
@@ -138,9 +138,8 @@ out_val = c(out_val, args$logit_seq_prob_lvl_effect)
 
 if (args$prob_risk_factor > 0){
 	out_arg = c(out_arg ,'w[1]')
-	args$prob_MI_risk_factor / args$prob_MI
 	# calculate odds ratio
-	out_val = c(out_val, logit(args$prob_MI_risk_factor) - logit(args$prob_MI))
+	out_val = c(out_val, logit(args$prob_MI_risk_factor) - logit(args$prob_MI_baseline))
 	for (i in 1:args$null_risk_factors){
 		out_arg = c(out_arg, paste(c('w[', as.character(i+1), ']'), collapse=''))
 		out_val = c(out_val, 0)

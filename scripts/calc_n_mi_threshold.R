@@ -36,7 +36,7 @@ fit = readRDS(args$fit)
 
 #  number of detected MIs by posterior cut-off
 cutoffs = seq(0.01,1,0.01)
-param=c('prob_MI', 'ind_log_prob_mi')
+param=c('prob_MI_baseline', 'ind_log_prob_mi')
 
 fit_draws = as_tibble(fit$draws(
 		variables = c(param),
@@ -89,13 +89,12 @@ n_mi_cutoff = bind_rows(lapply(cutoffs,
 n_mi_cutoff = n_mi_cutoff %>% pivot_wider(names_from=name, values_from=n_mi)
 
 # estimated median prevalence of multiple infections
-estimated_n_mi = (fit_draws %>% filter(name == 'prob_MI') %>% summarise(m = median(value)))$m * 
+estimated_n_mi = (fit_draws %>% filter(name == 'prob_MI_baseline') %>% summarise(m = median(value)))$m * 
 	length(unique(p_dat$id))
 
 n_mi_threshold = n_mi_cutoff %>% pivot_longer(-cutoff) %>%
 	filter(value <= estimated_n_mi) %>%
 	group_by(name) %>% filter(cutoff == min(cutoff)) 
-
 
 out = bind_rows(
 	n_mi_cutoff %>%

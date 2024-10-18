@@ -55,9 +55,9 @@ calc_basic_stats = function(out, metadata, round_digits=2){
 	labels=c(labels, 'max_survey_date')
 	vals = c(vals, as.character(metadata$max_survey_date[[1]]))
 	labels=c(labels, 'min_survey_year')
-	vals = c(vals, str_split(metadata$min_survey_date[[1]], "-", simplify=T)[,1])
+	vals = c(vals, str_split(metadata$min_survey_date[[1]], " ", simplify=T)[,2])
 	labels=c(labels, 'max_survey_year')
-	vals = c(vals, str_split(metadata$max_survey_date[[1]], "-", simplify=T)[,1])
+	vals = c(vals, str_split(metadata$max_survey_date[[1]], " ", simplify=T)[,2])
 	# dates per round
 	survey_round_years = metadata %>%
 		select(round, round_median_year) %>%
@@ -309,6 +309,12 @@ calc_phsc_input = function(out, metadata){
 	vals = c(vals, phsc_samples$min_phsc_date[[1]])
 	labels = c(labels, "max_phsc_date")
 	vals = c(vals, phsc_samples$max_phsc_date[[1]])
+	labels = c(labels, "min_phsc_year")
+	vals = c(vals, str_split(phsc_samples$min_phsc_date[[1]], " ", simplify=TRUE)[2])
+	labels = c(labels, "max_phsc_year")
+	vals = c(vals, str_split(phsc_samples$max_phsc_date[[1]], " ", simplify=TRUE)[2])
+
+
 	# group by sequencing technology and get counts
 	seq_tech_counts = metadata %>% 
 		filter(log10_copies > 3 & phsc_par == TRUE) %>%
@@ -495,7 +501,7 @@ calc_fit_output = function(out, name, param, f){
 		vals = c(vals, format(as.numeric((param %>% filter(arg == 'N_ind'))$value), big.mark=','))
 	}
 	# rates so multiply by 100
-	for (r in c('prob_MI', 'prob_MI_fpr', 'prob_MI_fnr', f$name[grepl('risk_', f$name)])){
+	for (r in c('prob_MI_baseline', 'prob_MI_fpr', 'prob_MI_fnr', f$name[grepl('risk_', f$name)])){
 		r_out = str_replace(str_replace(r, '\\]', ''), '\\[', '')
 		# simulated value, if included in parameters
 		if (!all(is.na(param))){
@@ -513,7 +519,7 @@ calc_fit_output = function(out, name, param, f){
 				vals = c(vals, round(100*f_r[col][[1]], round_digits))
 			}
 			col = 'median'
-			if (r == 'prob_MI'){
+			if (r == 'prob_MI_baseline'){
 				labels = c(labels, paste(c(name, '_fit_', r_out, '_', col, '_percent_int'), collapse=''))
 				vals = c(vals, round(100*f_r[col][[1]], 0))
 			}
@@ -576,6 +582,7 @@ p <- add_argument(p, "--empiricalFullFit", help="full model fit to empirical dat
 p <- add_argument(p, "--empiricalFullAltFit", help="full model fit to empirical data", nargs=1)
 p <- add_argument(p, "--empiricalSeqFit", help="full model fit to empirical data", nargs=1)
 p <- add_argument(p, "--empiricalCommFit", help="full model fit to empirical data", nargs=1)
+p <- add_argument(p, "--empiricalSeqCommFit", help="full model fit to empirical data", nargs=1)
 p <- add_argument(p, "--empiricalSexpeverMenFit", help="full model fit to empirical data", nargs=1)
 p <- add_argument(p, "--empiricalSexpeverMenCompleteFit", help="full model fit to empirical data", nargs=1)
 p <- add_argument(p, "--empiricalVarSelectFit", help="full model fit to empirical data", nargs=1)
@@ -596,6 +603,7 @@ round_digits = 2
 #args$empiricalFullFit = 'fit/211220_allreads_phsc_all_subgraphs_format_par_full_model__summary.tsv'
 #args$empiricalSeqFit = 'fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_summary.tsv'
 #args$empiricalCommFit = 'fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_comm_type_summary.tsv'
+#args$empiricalSeqCommFit = 'fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_comm_type_summary.tsv'
 #args$empiricalSexpeverMenFit  = 'fit/211220_allreads_phsc_all_subgraphs_format_par_m_extended_model_sexpever_men_summary.tsv'
 #args$empiricalSexpeverMenCompleteFit  = 'fit/211220_allreads_phsc_all_subgraphs_format_par_m_complete_extended_model_sexpever_men_complete_summary.tsv'
 #args$empiricalVarSelectFit = 'fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_hsp_var_select_summary.tsv'
@@ -639,6 +647,7 @@ empirical_full_fit = read_tsv(args$empiricalFullFit, show_col_types=FALSE)
 empirical_full_alt_fit = read_tsv(args$empiricalFullAltFit, show_col_types=FALSE)
 empirical_seq_fit = read_tsv(args$empiricalSeqFit, show_col_types=FALSE)
 empirical_comm_fit = read_tsv(args$empiricalCommFit, show_col_types=FALSE)
+empirical_seq_comm_fit = read_tsv(args$empiricalSeqCommFit, show_col_types=FALSE)
 empirical_sexpever_men_fit = read_tsv(args$empiricalSexpeverMenFit, show_col_types=FALSE)
 empirical_sexpever_men_complete_fit = read_tsv(args$empiricalSexpeverMenCompleteFit, show_col_types=FALSE)
 empirical_var_select_fit = read_tsv(args$empiricalVarSelectFit, show_col_types=FALSE)
@@ -664,6 +673,7 @@ out = calc_fit_output(out, 'empirical_full', NA, empirical_full_fit)
 out = calc_fit_output(out, 'empirical_full_alt', NA, empirical_full_alt_fit)
 out = calc_fit_output(out, 'empirical_seq', NA, empirical_seq_fit)
 out = calc_fit_output(out, 'empirical_comm', NA, empirical_comm_fit)
+out = calc_fit_output(out, 'empirical_seq_tech_comm', NA, empirical_seq_comm_fit)
 out = calc_fit_output(out, 'empirical_sexpever_men', NA, empirical_sexpever_men_fit)
 out = calc_fit_output(out, 'empirical_sexpever_men_complete', NA, empirical_sexpever_men_complete_fit)
 out = calc_fit_output(out, 'empirical_var_select', NA, empirical_var_select_fit)
@@ -672,12 +682,6 @@ out = calc_phsc_output(out, phsc_dat, round_digits=round_digits)
 # unpack
 vals = out[["vals"]]
 labels = out[["labels"]]
-
-
-# additional simulation results
-labels = c(labels, 'ext_ext_prob_MI_log_or')
-vals = c(vals, round(logit(as.numeric((ext_params %>% filter(arg == "prob_MI_risk_factor"))$value)) - 
-	logit(as.numeric((ext_params %>% filter(arg == "prob_MI"))$value)), round_digits))
 
 # additional empirical results
 # proportion of sequenced participants by sequencing technology and community type
@@ -730,22 +734,23 @@ sexpever_meanFishing24_29 = (metadata %>% filter(finalhiv == 'P' & sex == 'M' & 
 
 sexpever_fit = readRDS(str_replace(args$empiricalSexpeverMenFit, "_summary.tsv", ".Rds"))
 sexpever_draws = as_tibble(sexpever_fit$draws(
-		variables = c('logit_prob_MI', 'logit_prob_MI_coeffs[1]', 'logit_prob_MI_coeffs[4]'),
+		variables = c('logit_prob_MI', 'logit_prob_MI_coeffs[1]', 'logit_prob_MI_coeffs[3]'),
         inc_warmup = FALSE,
         format = "draws_df")) %>%
 	select(-.chain, -.iteration, -.draw) %>%
 	mutate(cit = seq(1,n()))
+
 
 # risk of MI with 1 lifetime sexpartner
 rr_sexpever_Fishing24_29_1v30 = sexpever_draws %>%
 	mutate(rr = inv_logit(
 			logit_prob_MI + 
 				`logit_prob_MI_coeffs[1]` + 
-				`logit_prob_MI_coeffs[4]` * (30 - sexpever_meanFishing24_29)) / 
+				`logit_prob_MI_coeffs[3]` * (30 - sexpever_meanFishing24_29)) / 
 			inv_logit(
 			logit_prob_MI + 
 				`logit_prob_MI_coeffs[1]` + 
-				`logit_prob_MI_coeffs[4]` * (1 - sexpever_meanFishing24_29))) %>%
+				`logit_prob_MI_coeffs[3]` * (1 - sexpever_meanFishing24_29))) %>%
 	summarise(median=median(rr), lower = get_hpd(rr)$lower, upper=get_hpd(rr)$upper)
 
 

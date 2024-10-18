@@ -92,8 +92,10 @@ run_stan = function(args){
     }
     stan_data$nu = 2
     f = paste('~', paste(args$miDesignMatrix, collapse='+'), sep='')
+    out$f = f
     mi_design_matrix = as.matrix(model.matrix(
       as.formula(f), data=d_f))
+    out$mi_design_matrix = mi_design_matrix
     # standardize continous variables within strata 
     out$mi_design_matrix_cols = colnames(mi_design_matrix)[2:ncol(mi_design_matrix)]
     stan_data$K_mi_risk_factors = ncol(mi_design_matrix)-1
@@ -219,12 +221,19 @@ p = add_argument(p, "--miMissingDat",
     missing_std is the column to use to standardize missing values, use 'none' or omit for no standardization.", 
   nargs=Inf)
 #### POST-HOC CALCULATIONS ####
-p = add_argument(p, "--risks", nargs=Inf, help='post hoc calcualtion of risk')
-p = add_argument(p, "--riskRatios", nargs=Inf,  help='post hoc calcualtion of risk ratios')
+p = add_argument(p, "--designRisks", nargs=Inf, 
+  help='post hoc calculation of risk based on design matrix, implicitly assumes baseline values on non-specified covariates')
+p = add_argument(p, "--designRiskRatios", nargs=Inf,  
+  help='post hoc calculation of risk ratios based on design matrix, implicitly assumes baseline values on non-specified covariates')
+p = add_argument(p, "--empiricalRisks", nargs=Inf, 
+  help='post hoc calculation of risk among individuals with a given set of covariates assuming observed values of all non-specified covariates')
+p = add_argument(p, "--populationRisks", nargs=Inf, 
+  help='post hoc calculation of risk assuming all individuals had a given set of covariates')
+p = add_argument(p, "--populationRiskRatios", nargs=Inf,
+  help='post hoc calculation of risk ratios assuming all individuals had a given set of covariates')
 #### OUTPUT SETTINGS ####
 p = add_argument(p, "--outAppend", help='additional string to append to out name', default='')
 args = parse_args(p)
-
 #args$dat = "output/211220_allreads_phsc_all_subgraphs_format_par.tsv"
 #args$inputType = "full"
 #args$stan = "stan/extended_model_hsp.stan"
@@ -244,6 +253,11 @@ args = parse_args(p)
 #args$scaleVars =c("log10_copies:sequencing_technology")
 #args$risks =c("TRUE")
 #args$outAppend = "test"
+
+#args$dat = "simulations/extended_simulation.tsv \
+#args$stan = "stan/extended_model_hsp.stan \
+#args$seqDesignMatrix = ""scaled_log10_vl_obs" \
+#args$risks = "TRUE" 
 
 out = run_stan(args)
 fit = out$fit
@@ -289,27 +303,8 @@ fit_sum = fit_sum %>% mutate(
     out$d_f %>% select(any_of(id_cols)) %>% mutate(idx = seq(1,n())), 
     by='idx')
 
-if (!file.exists('fit/')){
-  dir.create('fit') 
-}
-
 #### POST-HOC CALCULATIONS ####
-#args$risks = c('logit_prob_MI+logit_prob_MI_coeffs[1]')
-# add desired risks, if any
-# get design matrix 
-ind_prob_MI = as_tibble(fit$draws(
-        'ind_log_prob_mi',
-        inc_warmup = FALSE,
-        format = "draws_df")) %>%
-    mutate(cit = seq(1,n())) %>%
-    pivot_longer(-cit) %>%
-    filter(name != ".iteration" & 
-      name != '.draw' & 
-      name != '.chain') %>%
-    mutate(idx = gsub("\\]", "", gsub("ind_log_prob_mi\\[", "", name))) %>%
-    select(-name) %>%
-    mutate(value = exp(value))
-
+# prob MI for all i
 prob_MI = as_tibble(fit$draws(
       'prob_MI',
       inc_warmup = FALSE,
@@ -322,28 +317,61 @@ prob_MI = as_tibble(fit$draws(
     mutate(idx = gsub("\\]", "", gsub("prob_MI\\[", "", name))) %>%
     select(-name)
 
-if (!all(is.na(args$risks))){
-  for (i in args$risks){
-    i_ind_prob_MI = ind_prob_MI %>% 
-      filter(idx %in% (d_f %>% filter(eval(parse(text=i))))$idx)
+if (!all(is.na(args$designRisks))){
+  for (i in args$designRisks){
+    i_split = str_split(i, "\\+", simplify=TRUE)
+    fit_sum = bind_rows(
+      fit_sum, 
+      fit_draws %>% filter(name %in% i_split) %>%
+        group_by(cit) %>%
+        summarise(value = inv_logit(sum(value)), .groups="drop") %>%
+        summarise(get_hpd(value) %>%
+            mutate(
+              name = paste('risk_', i, sep=''),
+              median = median(value),
+              bulk_ess = ess_bulk(value),
+              tail_ess = ess_tail(value),
+              rhat = rhat(value))))
+  }
+}
+
+
+if (!all(is.na(args$designRiskRatios))){
+  for (i in args$designRiskRatios){
+    i_split = str_split(i, ":", simplify=TRUE)
+    num_split = str_split(i_split[1], "\\+", simplify=TRUE)
+    denom_split = str_split(i_split[2], "\\+", simplify=TRUE)
+    fit_sum = bind_rows(
+      fit_sum,
+      fit_draws %>% filter(name %in% num_split) %>%
+        group_by(cit) %>%
+        summarise(num_value = sum(value), .groups='drop') %>%
+        left_join(
+          fit_draws %>% filter(name %in% denom_split) %>%
+            group_by(cit) %>%
+            summarise(denom_value = sum(value), .groups='drop'),
+          by=c('cit')) %>%
+        mutate(value = inv_logit(num_value)/inv_logit(denom_value)) %>%
+        summarise(get_hpd(value) %>%
+          mutate(
+            name = paste('rr_', i, sep=''),
+            median = median(value),
+            bulk_ess = ess_bulk(value),
+            tail_ess = ess_tail(value),
+            rhat = rhat(value))))
+  }
+}
+
+if (!all(is.na(args$empiricalRisks))){
+  for (i in args$empiricalRisks){
     i_prob_MI = prob_MI  %>% 
       filter(idx %in% (d_f %>% filter(eval(parse(text=i))))$idx)
-    fit_sum = bind_rows(fit_sum, i_ind_prob_MI %>% 
-        group_by(cit) %>%
-        summarise(mean_value = mean(value)) %>%
-        summarise(get_hpd(mean_value) %>%
-            mutate(
-              name = paste('sample_risk_', i, sep=''),
-              median = median(mean_value),
-              bulk_ess = ess_bulk(mean_value),
-              tail_ess = ess_tail(mean_value),
-              rhat = rhat(mean_value))))
     fit_sum = bind_rows(fit_sum, i_prob_MI %>% 
         group_by(cit) %>%
         summarise(mean_value = mean(value)) %>%
         summarise(get_hpd(mean_value) %>%
             mutate(
-              name = paste('pop_risk_', i, sep=''),
+              name = paste('empirical_risk_', i, sep=''),
               median = median(mean_value),
               bulk_ess = ess_bulk(mean_value),
               tail_ess = ess_tail(mean_value),
@@ -351,51 +379,120 @@ if (!all(is.na(args$risks))){
   }
 }
 
-
-if (!all(is.na(args$riskRatios))){
-  for (i in args$riskRatios){
-    i_split = str_split(i, ":", simplify=TRUE)
-    num_ind_prob_MI = ind_prob_MI %>% 
-      filter(idx %in% (d_f %>% filter(eval(parse(text=i_split[1]))))$idx) %>%
-      group_by(cit) %>%
-        summarise(mean_value = mean(value))
-    num_prob_MI = prob_MI  %>% 
-      filter(idx %in% (d_f %>% filter(eval(parse(text=i_split[1]))))$idx) %>%
-       group_by(cit) %>%
-        summarise(mean_value = mean(value))
-    denom_ind_prob_MI = ind_prob_MI %>% 
-      filter(idx %in% (d_f %>% filter(eval(parse(text=i_split[2]))))$idx) %>%
-       group_by(cit) %>%
-        summarise(mean_value = mean(value))
-    denom_prob_MI = prob_MI  %>% 
-      filter(idx %in% (d_f %>% filter(eval(parse(text=i_split[2]))))$idx) %>%
-       group_by(cit) %>%
-        summarise(mean_value = mean(value))
+if (!all(is.na(args$populationRisks))){
+  for (i in args$populationRisks){
+    # get intercept and coefficients
+    baseline = fit_draws %>% filter(name == 'logit_prob_MI') %>% 
+      pivot_wider(names_from='name', values_from='value')
+    # todo ensure column sorting is robust
+    # have to account for shrinkage priors when exist
+    if (grepl('_hsp',args$stan)){
+      coeffs = fit_draws %>% filter(grepl('w\\[', name)) %>% 
+        pivot_wider(names_from='name', values_from='value')
+    }else{
+      coeffs = fit_draws %>% filter(grepl('logit_prob_MI_coeffs', name)) %>% 
+        pivot_wider(names_from='name', values_from='value')
+    }
+    coeffs = bind_cols(baseline, coeffs %>% select(-cit))
+    k_split = str_split(i, "&", simplify=TRUE)
+    # pull original data frame
+    k_df = out$d_f
+    for (j in k_split){
+      j_split = str_split(j, "=", simplify=TRUE)
+      k_df[gsub("[[:blank:]]", "", j_split[1])] = eval(parse(text=j_split[2]))
+      # manually reorder factors for comm_type
+      if (gsub("[[:blank:]]", "", j_split[1]) == "comm_type"){
+        k_df$comm_type = factor(k_df$comm_type, 
+          levels = sort(as.character(unique(d_f$comm_type)), decreasing=TRUE))
+      }
+    }
+    # bind dataframes as a hack to get correct design matrices when only one level
+    dm = as.matrix(model.matrix(
+      as.formula(out$f), data=bind_rows(k_df,out$d_f,)))[1:nrow(k_df),]
+    # calculate risk
+    risk = apply(as.matrix(coeffs)[,2:ncol(coeffs)], 1, 
+      function(x) inv_logit(colSums(t(dm)*x)))
+    mean_risk = colMeans(risk, 1)
     fit_sum = bind_rows(
       fit_sum,
-      num_ind_prob_MI %>% left_join(denom_ind_prob_MI, by=c('cit')) %>%
-        mutate(value = mean_value.x / mean_value.y) %>%
-        summarise(get_hpd(value) %>%
-        mutate(
-          name = paste('ind_rr_', i, sep=''),
-          median = median(value),
-          bulk_ess = ess_bulk(value),
-          tail_ess = ess_tail(value),
-          rhat = rhat(value))))
-    fit_sum = bind_rows(
-      fit_sum,
-      num_prob_MI %>% left_join(denom_prob_MI, by=c('cit')) %>%
-        mutate(value = mean_value.x / mean_value.y) %>%
-        summarise(get_hpd(value) %>%
-        mutate(
-          name = paste('pop_rr_', i, sep=''),
-          median = median(value),
-          bulk_ess = ess_bulk(value),
-          tail_ess = ess_tail(value),
-          rhat = rhat(value))))
+      as_tibble(mean_risk) %>%
+        mutate(cit = seq(1,n())) %>%
+        summarise(
+          get_hpd(value) %>%
+          mutate(
+            name = paste('population_risk_', i, sep=''),
+            median = median(value),
+            bulk_ess = ess_bulk(value),
+            tail_ess = ess_tail(value),
+            rhat = rhat(value))))
   }
 }
 
+if (!all(is.na(args$populationRiskRatios))){
+  for (i in args$populationRiskRatios){
+    i_split = str_split(i, ":", simplify=TRUE)
+    # get intercept and coefficients
+    baseline = fit_draws %>% filter(name == 'logit_prob_MI') %>% 
+      pivot_wider(names_from='name', values_from='value')
+    # todo ensure column sorting is robust
+    # have to account for shrinkage priors when exist
+    if (grepl('_hsp',args$stan)){
+      coeffs = fit_draws %>% filter(grepl('w\\[', name)) %>% 
+        pivot_wider(names_from='name', values_from='value')
+    }else{
+      coeffs = fit_draws %>% filter(grepl('logit_prob_MI_coeffs', name)) %>% 
+        pivot_wider(names_from='name', values_from='value')
+    }
+    coeffs = bind_cols(baseline, coeffs %>% select(-cit))
+    # create design matrices for desired RR, keeping all other covariates the same
+    # risk ratio so only should be two items in i
+    dms = list()
+    for (k in 1:2){
+      k_split = str_split(i_split[k], "&", simplify=TRUE)
+      # pull original data frame
+      k_df = out$d_f
+      for (j in k_split){
+        j_split = str_split(j, "=", simplify=TRUE)
+        k_df[gsub("[[:blank:]]", "", j_split[1])] = eval(parse(text=j_split[2]))
+        # manually reorder factors for comm_type
+        if (gsub("[[:blank:]]", "", j_split[1]) == "comm_type"){
+          k_df$comm_type = factor(k_df$comm_type, 
+            levels = sort(as.character(unique(d_f$comm_type)), decreasing=TRUE))
+        }
+      }
+      # bind dataframes as a hack to get correct design matrices when only one level
+      dms[[k]] = as.matrix(model.matrix(
+        as.formula(out$f), data=bind_rows(k_df,out$d_f,)))[1:nrow(k_df),]
+    }
+    # calculate risk for each dm
+    risks = list()
+    for (k in 1:length(dms)){
+      risks[[k]] = apply(as.matrix(coeffs)[,2:ncol(coeffs)], 1, 
+        function(x) inv_logit(colSums(t(dms[[k]])*x)))
+    }
+    # for each i, for each iteration calculate RR
+    rr = risks[[1]]/risks[[2]]
+    # avearge across all individuals in each iteration
+    mean_rr = colMeans(rr, 1)
+    fit_sum = bind_rows(
+      fit_sum,
+      as_tibble(mean_rr) %>%
+        mutate(cit = seq(1,n())) %>%
+        summarise(
+          get_hpd(value) %>%
+          mutate(
+            name = paste('population_rr_', i, sep=''),
+            median = median(value),
+            bulk_ess = ess_bulk(value),
+            tail_ess = ess_tail(value),
+            rhat = rhat(value))))
+  }
+}
+
+
+if (!file.exists('fit/')){
+  dir.create('fit') 
+}
 
 # output file name
 d_name = str_split(args$dat, '/', simplify=TRUE)

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+
 #### ------------------------------------- ####
 #### 1. FULL MODEL WITH IDENTICAL PROB. MI ####
 #### ------------------------------------- ####
@@ -8,7 +9,8 @@ Rscript scripts/run_stan.R \
 	--inputType full \
 	--stan stan/full_model.stan \
 	--seqDesignMatrix "sequencing_technology" "sequencing_technology:log10_copies" \
-	--scaleVars "log10_copies:sequencing_technology" 
+	--scaleVars "log10_copies:sequencing_technology" \
+	--designRisks "logit_prob_MI"
 
 # need to format plot params file based on design matrix
 n_intercept=$(grep -v "\\:" fit/211220_allreads_phsc_all_subgraphs_format_par_full_model__design_cols.tsv | \
@@ -57,8 +59,8 @@ Rscript scripts/run_stan.R \
 	--miDesignMatrix sequencing_technology \
 	--seqDesignMatrix "sequencing_technology" "sequencing_technology:log10_copies" \
 	--scaleVars 'log10_copies:sequencing_technology' \
-	--risks "logit_prob_MI_coeffs[1]+logit_prob_MI" "logit_prob_MI" \
-	--riskRatios "logit_prob_MI_coeffs[1]+logit_prob_MI:logit_prob_MI" \
+	--designRisks "logit_prob_MI_coeffs[1]+logit_prob_MI" "logit_prob_MI" \
+	--designRiskRatios "logit_prob_MI_coeffs[1]+logit_prob_MI:logit_prob_MI" \
 	--outAppend sequencing_technology
 
 # need to format plot params file based on design matrix
@@ -108,8 +110,63 @@ Rscript scripts/run_stan.R \
 	--miDesignMatrix comm_type sequencing_technology \
 	--seqDesignMatrix "sequencing_technology" "sequencing_technology:log10_copies" \
 	--scaleVars 'log10_copies:sequencing_technology' \
-	--risks "logit_prob_MI_coeffs[2]+logit_prob_MI" "logit_prob_MI_coeffs[1]+logit_prob_MI" "logit_prob_MI" \
-	--riskRatios "logit_prob_MI_coeffs[2]+logit_prob_MI:logit_prob_MI" "logit_prob_MI_coeffs[1]+logit_prob_MI:logit_prob_MI"\
+	--populationRiskRatios "sequencing_technology='bait_capture':sequencing_technology='amplicon'"
+	--outAppend sequencing_technology_comm_type
+
+
+# need to format plot params file based on design matrix
+n_intercept=$(
+	awk -F'\t' '{if ($2=="seq") print $0}' fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_comm_type_design_cols.tsv | \
+		grep -v "\\:"  | \
+		grep -v "col" | wc -l)
+
+cat \
+	config/extended_empirical_plot_params_base.tsv \
+	<(echo "\n") \
+	<(awk -F'\t' '{print "logit_prob_seq_coeffs["NR"]\texpression(atop(\x27logit(seq. success):\x27, paste(\x27"$1" coeff. (\x27,alpha^\"" $1 "\", \x27)\x27)))\talpha^"$1}' \
+		<(awk -F'\t' '{if ($2=="seq") print $1}' \
+			<(grep -v "\\:" fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_comm_type_design_cols.tsv))) \
+	<(awk -F'\t' -v n=$n_intercept '{print "logit_prob_seq_coeffs["NR+n"]\texpression(atop(\x27logit(seq. success):\x27, paste(\x27"$1" coeff. (\x27,alpha^\"" $1 "\", \x27)\x27)))\talpha^"$1}' \
+		<(awk -F'\t' '{if ($2=="seq") print $1}' \
+			<(grep "\\:" fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_comm_type_design_cols.tsv))) \
+	<(awk -F'\t' '{print "logit_prob_MI_coeffs["NR"]\t\"expression(atop(\x27logit(prob. MI):\x27, paste(\x27"$1" coeff. (\x27,beta["NR"], \x27)\x27)))\"\tbeta_"NR}' \
+		<(awk -F'\t' '{if ($2=="mi") print $1}' fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_comm_type_design_cols.tsv)) |\
+	sed '/^$/d' | \
+	sed 's/sequencing_technology//g' |	\
+	sed 's/bait_capture/bait capture/g' | \
+	sed 's/:log10_copies/-vl/g' | \
+	sed 's/-vl coeff/ VL coeff/g' | \
+	sed 's/alpha^\"bait capture/alpha^\"bait/g' | \
+	sed 's/alpha^bait capture/alpha^bait/g' | \
+	sed 's/comm_type//g' \
+	> config/tmp.tsv
+
+# sort rows
+cat \
+	<(head -n 1 config/tmp.tsv) \
+	<(tail -n +2 config/tmp.tsv | tail -n +2 config/tmp.tsv | grep "logit_prob_seq" | sort) \
+	<(grep lambda config/tmp.tsv) \
+	<(grep epsilon config/tmp.tsv) \
+	<(grep prob_MI config/tmp.tsv | grep -v epsilon | grep -v lambda) \
+	> config/sequencing_technology_comm_type_empirical_plot_params.tsv
+rm -rf config/tmp.tsv
+
+
+#### ------------------------------------------------------ ####
+#### 4. EXTENDED MODEL WITH PROB. MI DEPENDENT ON COMM_TYPE ####
+#### ------------------------------------------------------ ####
+Rscript scripts/run_stan.R \
+	--dat output/211220_allreads_phsc_all_subgraphs_format_par.tsv \
+	--inputType full \
+	--stan stan/extended_model.stan \
+	--miDesignMatrix comm_type \
+	--seqDesignMatrix "sequencing_technology" "sequencing_technology:log10_copies" \
+	--scaleVars 'log10_copies:sequencing_technology' \
+	--designRisks \
+		"logit_prob_MI_coeffs[1]+logit_prob_MI" \
+		"logit_prob_MI" \
+	--designRiskRatios \
+		"logit_prob_MI_coeffs[1]+logit_prob_MI:logit_prob_MI" \
 	--outAppend comm_type
 
 
@@ -152,7 +209,7 @@ rm -rf config/tmp.tsv
 
 
 #### ----------------------------------------------------------------------------------- ####
-#### 4. EXTENDED MODEL WITH PROB. MI DEPENDENT ON COMM_TYPE, SEXPEVER, & SEQUENCING_TECH ####
+#### 5. EXTENDED MODEL WITH PROB. MI DEPENDENT ON COMM_TYPE, SEXPEVER, & SEQUENCING_TECH ####
 #### ----------------------------------------------------------------------------------- ####
 # ONLY PERFORM THIS ANALYSIS AMONG MEN
 Rscript scripts/run_stan.R \
@@ -160,7 +217,7 @@ Rscript scripts/run_stan.R \
 	--inputType full \
 	--stan stan/extended_model.stan \
 	--seqDesignMatrix "sequencing_technology" "sequencing_technology:log10_copies" \
-	--miDesignMatrix "comm_type" "comm_type:plhiv_sexpever_std" "sequencing_technology" \
+	--miDesignMatrix "comm_type" "comm_type:plhiv_sexpever_std" \
 	--scaleVars 'log10_copies:sequencing_technology' \
 	--miMissingDat \
 		'plhiv_sexpever_std:93;3;60;plhiv_sexpeverMany_shape;plhiv_sexpeverMany_scale;plhiv_sexpever_mean' \
@@ -172,7 +229,7 @@ Rscript scripts/run_stan.R \
 	--inputType full \
 	--stan stan/extended_model.stan \
 	--seqDesignMatrix "sequencing_technology" "sequencing_technology:log10_copies" \
-	--miDesignMatrix "comm_type" "sequencing_technology" "comm_type:plhiv_sexpever_std" \
+	--miDesignMatrix "comm_type" "comm_type:plhiv_sexpever_std" \
 	--scaleVars 'log10_copies:sequencing_technology' \
 	--outAppend sexpever_men_complete
 
@@ -217,7 +274,7 @@ rm -rf config/tmp.tsv
 
 
 #### ----------------------------------------- ####
-#### 5. EXTENDED MODEL WITH VARIABLE SELECTION ####
+#### 6. EXTENDED MODEL WITH VARIABLE SELECTION ####
 #### ----------------------------------------- ####
 Rscript scripts/run_stan.R \
 	--dat output/211220_allreads_phsc_all_subgraphs_format_par.tsv \
@@ -227,8 +284,7 @@ Rscript scripts/run_stan.R \
 		"comm_type:in_migrant" "comm_type:barworker" \
 	--seqDesignMatrix "sequencing_technology" "sequencing_technology:log10_copies" \
 	--scaleVars 'log10_copies:sequencing_technology' \
-	--risks "logit_prob_MI_coeffs[7]+logit_prob_MI" "logit_prob_MI" \
-	--riskRatios "logit_prob_MI_coeffs[7]+logit_prob_MI:logit_prob_MI" \
+	--populationRiskRatios "comm_type='fishing':comm_type='inland'" \
 	--outAppend var_select
 
 

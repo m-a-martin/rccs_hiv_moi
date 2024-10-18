@@ -294,8 +294,15 @@ survey_dates =
 		min = min(visit_dt, na.rm=TRUE), 
 		max = max(visit_dt, na.rm=TRUE))
 
-metadata$min_survey_date = survey_dates$min
-metadata$max_survey_date = survey_dates$max
+metadata$min_survey_date = paste(c(
+				format(survey_dates$min, "%B"), 
+				" ",
+				format(survey_dates$min, "%Y")), collapse='')
+
+metadata$max_survey_date = paste(c(
+				format(survey_dates$max, "%B"), 
+				" ",
+				format(survey_dates$max, "%Y")), collapse='')
 
 # add median round years
 metadata = metadata %>% group_by(round) %>% 

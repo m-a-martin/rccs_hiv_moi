@@ -168,4 +168,45 @@ model{
 }
 
  
+generated quantities {
+  // posterior predictions
+  // number of sequenced windows for each sample
+  array[N_ind] int N_counts_ppr;
+  array[N_ind] int D_counts_ppr;
+  vector[N_ind] ind_log_prob_mi;
+  real mi_draw; 
+  real tmp;
+
+  for (i in 1:N_ind){
+    ind_log_prob_mi[i] = log(prob_MI[i]) + 
+                          binomial_lpmf(  MI_obs[i] | N_obs[i], prob_seq_MI[i] ) + 
+                          binomial_lpmf( N_obs[i] | N_obs_max, prob_seq_any[i] ) - 
+                          log1m_exp( two_times_N_obs_max * log1m_prob_seq_1[i] );
+    ind_log_prob_mi[i] -= log_mix(  prob_MI[i],
+                        binomial_lpmf(  MI_obs[i] | N_obs[i], prob_seq_MI[i] ) + 
+                          binomial_lpmf( N_obs[i] | N_obs_max, prob_seq_any[i] ) - 
+                          log1m_exp( two_times_N_obs_max * log1m_prob_seq_1[i] ),
+                        binomial_lpmf( MI_obs[i] | N_obs[i], prob_MI_fpr ) + 
+                          binomial_lpmf( N_obs[i] | N_obs_max, prob_seq_1[i] ) -
+                          log1m_exp( N_obs_max * log1m_prob_seq_1[i] ) );
+    tmp = exp(ind_log_prob_mi[i]);
+    // avoids edge case error 
+    // tmp should never be > 1, but sometimes when ind_log_prob_mi is 
+    // very close to 0, stan seems to think it is and bernoulli_rng
+    // will throw an error
+    if (tmp > 1){
+      mi_draw = 1;
+    }else{
+      mi_draw = bernoulli_rng(tmp);
+    }
+    if ( mi_draw == 1 ){
+      N_counts_ppr[i] = trunc_binomial_rng(N_obs_max, prob_seq_any[i]);
+      D_counts_ppr[i] = binomial_rng(N_counts_ppr[i], prob_seq_MI[i]);
+    }else{
+      N_counts_ppr[i] = trunc_binomial_rng(N_obs_max, prob_seq_1[i]);
+      D_counts_ppr[i] = binomial_rng(N_counts_ppr[i], prob_MI_fpr);
+    }
+  }
+}
+ 
 

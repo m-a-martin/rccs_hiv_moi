@@ -51,6 +51,10 @@ for g in $k ${k%".tex"}_figs.tex; do
 	pandoc --biblatex --bibliography=./references.bib -s $g -o $o --citeproc
 	mv $o ${o/_vals/}
 done
+# clean up
+for g in $k ${k%".tex"}_figs.tex; do
+	rm $g
+done
 
 
 lualatex $i

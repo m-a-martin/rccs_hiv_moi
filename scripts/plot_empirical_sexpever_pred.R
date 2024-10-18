@@ -131,7 +131,7 @@ plot_list[[1]] = plot_list[[1]] +
 		fill = guide_legend(position="inside", title=NULL)) +
 	theme(legend.justification.inside = c(0, 1))
 
-p = plot_grid(plotlist=plot_list, nrow=1)
+p = plot_grid(plotlist=plot_list, nrow=1, rel_widths=c(1,c(rep(0.8, length(plot_list)-1))))
 
 ggsave(paste(c('figures/', args$out, '.pdf'), collapse=''), p, width=22, height=4.8)
 

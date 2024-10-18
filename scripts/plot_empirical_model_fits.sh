@@ -97,7 +97,7 @@ Rscript scripts/plot_fit_param_prior_posterior.R \
 	--out empirical_seqtech_prior \
 	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology.Rds  \
 	--plotParams config/tmp.tsv \
-	--nRowPer 2
+	--nRowPer 3
 rm -rf config/tmp.tsv
 
 # PARAMS
@@ -107,7 +107,50 @@ Rscript scripts/plot_fit_params.R \
 	--out empirical_seqtech_params \
 	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology.Rds \
 	--plotParams config/tmp.tsv \
-	--nRowPer 2
+	--nRowPer 3
+rm -rf config/tmp.tsv
+
+
+#### ---------------------------------- ####
+#### EMPIRICAL SEQ_TECH_COMM_TYPE MODEL ####
+#### ---------------------------------- ####
+# TRACE
+grep -v "prev. MIs" config/sequencing_technology_comm_type_empirical_plot_params.tsv \
+	> config/tmp.tsv
+Rscript scripts/plot_trace.R \
+	--out empirical_seqtech_comm_trace \
+	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_comm_type.Rds \
+	--plotParams config/tmp.tsv \
+	--nRow 3
+rm -rf config/tmp.tsv
+
+# PAIRS
+grep -v "prev. MIs" config/sequencing_technology_comm_type_empirical_plot_params.tsv \
+	> config/tmp.tsv
+Rscript scripts/plot_pairs.R \
+	--out empirical_seqtech_comm_pairs \
+	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_comm_type.Rds \
+	--plotParams config/tmp.tsv
+rm -rf config/tmp.tsv
+
+# PRIOR
+grep -v "prev. MIs" config/sequencing_technology_comm_type_empirical_plot_params.tsv \
+	> config/tmp.tsv
+Rscript scripts/plot_fit_param_prior_posterior.R \
+	--out empirical_seqtech_comm_prior \
+	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_comm_type.Rds  \
+	--plotParams config/tmp.tsv \
+	--nRowPer 3
+rm -rf config/tmp.tsv
+
+# PARAMS
+grep -v "prev. MIs" config/sequencing_technology_comm_type_empirical_plot_params.tsv \
+	> config/tmp.tsv
+Rscript scripts/plot_fit_params.R \
+	--out empirical_seqtech_comm_params \
+	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_comm_type.Rds \
+	--plotParams config/tmp.tsv \
+	--nRowPer 3
 rm -rf config/tmp.tsv
 
 
@@ -140,7 +183,7 @@ Rscript scripts/plot_fit_param_prior_posterior.R \
 	--out empirical_commtype_prior \
 	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_comm_type.Rds  \
 	--plotParams config/tmp.tsv \
-	--nRowPer 2
+	--nRowPer 3
 rm -rf config/tmp.tsv
 
 # PARAMS
@@ -150,9 +193,8 @@ Rscript scripts/plot_fit_params.R \
 	--out empirical_commtype_params \
 	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_comm_type.Rds \
 	--plotParams config/tmp.tsv \
-	--nRowPer 2
+	--nRowPer 3
 rm -rf config/tmp.tsv
-
 
 
 #### ------------------------ ####
@@ -182,14 +224,14 @@ Rscript scripts/plot_fit_param_prior_posterior.R \
 	--out empirical_sexpever_men_prior \
 	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_m_extended_model_sexpever_men.Rds  \
 	--plotParams config/sexpever_men_empirical_plot_params.tsv \
-	--nRowPer 2
+	--nRowPer 3
 
 # PARAMS
 Rscript scripts/plot_fit_params.R \
 	--out empirical_sexpever_men_params \
 	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_m_extended_model_sexpever_men.Rds \
 	--plotParams config/sexpever_men_empirical_plot_params.tsv \
-	--nRowPer 2
+	--nRowPer 3
 
 # PREDICTED PROB. MI ACROSS AGE CATEGORIES
 Rscript scripts/plot_empirical_sexpever_pred.R \
@@ -206,7 +248,7 @@ Rscript scripts/plot_trace.R \
 	--out empirical_var_select_trace \
 	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_hsp_var_select.Rds \
 	--plotParams config/var_select_empirical_plot_params.tsv \
-	--nRow 7
+	--nRow 6
 
 # PAIRS
 Rscript scripts/plot_pairs.R \
@@ -219,15 +261,15 @@ Rscript scripts/plot_fit_param_prior_posterior.R \
 	--out empirical_var_select_prior \
 	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_hsp_var_select.Rds  \
 	--plotParams config/var_select_empirical_plot_params.tsv \
-	--nRowPer 4
+	--nRowPer 6
 
 # PARAMS
 # some params plotted in main figure, so excluding
-grep -v "logit_prob_MI_coeffs" config/var_select_empirical_plot_params.tsv \
+grep -v "w\\[" config/var_select_empirical_plot_params.tsv \
 	> config/tmp.tsv
 Rscript scripts/plot_fit_params.R \
 	--out empirical_var_select_params \
 	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_hsp_var_select.Rds  \
 	--plotParams config/tmp.tsv \
-	--nRowPer 2
+	--nRowPer 3
 rm -rf config/tmp.tsv

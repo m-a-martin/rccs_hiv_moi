@@ -49,7 +49,7 @@ for (idx in seq(1,nrow(plot_params))){
 	bounds50 = hdi(p_dat, credMass=0.50)[,1]
 	bounds = c(-Inf, bounds95[1], bounds50[1], bounds50[2], bounds95[2], Inf)
 	true_val = params_dict[param]
-	if (param == "prob_MI"){
+	if (param == "prob_MI_baseline"){
 		print(param)
 		plot_list[[param]] = plot_shadded_hist(p_dat, bounds, approx_bins=50,
 			cols=c(unname(args$colors_dict["mi_hpd3"]), 

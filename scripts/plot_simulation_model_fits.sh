@@ -220,7 +220,6 @@ Rscript scripts/plot_trace.R \
 	--nRow 4
 rm -rf config/tmp.tsv
 
-
 # PAIRS
 grep -v "prev. MIs" config/extended_simulation_plot_params.tsv | \
 	grep -v "logit_prob_MI_fnr" | \

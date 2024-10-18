@@ -25,13 +25,13 @@ fit = readRDS(args$fit)
 
 p1 = plot_ind_posterior_pred(dat,fit, args$colors_dict, guide=TRUE) + xlab('participants')
 
-param='prob_MI'
+param='prob_MI_baseline'
 p_dat = as_tibble(fit$draws(
 		variables = c(param),
 		  inc_warmup = FALSE,
 		  format = "draws_df")) %>%
 	select(all_of(param))
-median_prob_mi = median(p_dat$prob_MI)
+median_prob_mi = median(p_dat$prob_MI_baseline)
 # get HPD bounds
 bounds95 = hdi(p_dat, credMass=0.95)[,1]
 bounds50 = hdi(p_dat, credMass=0.50)[,1]

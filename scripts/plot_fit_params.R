@@ -74,7 +74,7 @@ for (jdx in 1:length(fit_paths)){
 				true_val = params_dict[[param]]
 			}
 		}
-		if (param == "prob_MI"){
+		if (param == "prob_MI_baseline"){
 			plot_list[[length(plot_list)+1]] = plot_shadded_hist(p_dat, bounds, approx_bins=50,
 				cols=c(unname(args$colors_dict["mi_hpd3"]), 
 					unname(args$colors_dict["mi_hpd2"]), 

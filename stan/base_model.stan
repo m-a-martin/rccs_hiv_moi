@@ -59,15 +59,17 @@ parameters{
 }
 
 transformed parameters{
-  real prob_MI;
+  real prob_MI_baseline;
+  vector[N_ind] prob_MI;
   real N_nnzero_times_log_prob_MI;
   vector[N_ind] prob_seq_1;
   vector[N_ind] prob_seq_MI;
   vector[N_ind] prob_seq_any;
   vector[N_ind] log1m_prob_seq_1;  
     
-  prob_MI = inv_logit( logit_prob_MI );  
-  N_nnzero_times_log_prob_MI = N_ind_with_MI_nnzero * log( prob_MI );
+  prob_MI_baseline = inv_logit( logit_prob_MI );  
+  prob_MI = rep_vector(prob_MI_baseline, N_ind);
+  N_nnzero_times_log_prob_MI = N_ind_with_MI_nnzero * log( prob_MI_baseline );
   prob_seq_1 = inv_logit( logit_prob_seq_baseline + X_seq*logit_prob_seq_coeffs + logit_prob_seq_ind);
   log1m_prob_seq_1 = log( 1 - prob_seq_1 );
   prob_seq_MI = prob_seq_1 .* inv( 2 - prob_seq_1);
@@ -85,7 +87,7 @@ model{
   
   for ( i in 1:N_ind_with_MI_zero )
   {
-    target += log_mix(  prob_MI,
+    target += log_mix(  prob_MI_baseline,
                         binomial_lpmf(  MI_obs[MI_zero_idx[i]] | N_obs[MI_zero_idx[i]], prob_seq_MI[MI_zero_idx[i]] ) + 
                           binomial_lpmf( N_obs[MI_zero_idx[i]] | N_obs_max, prob_seq_any[MI_zero_idx[i]] ) - 
                           log1m_exp( two_times_N_obs_max * log1m_prob_seq_1[MI_zero_idx[i]] ),
@@ -95,7 +97,7 @@ model{
                         );
   }
   for ( i in 1:N_ind_with_MI_nnzero){
-    target += log(prob_MI) + 
+    target += log(prob_MI_baseline) + 
       binomial_lpmf(MI_obs[MI_nnzero_idx[i]] | N_obs[MI_nnzero_idx[i]], prob_seq_MI[MI_nnzero_idx[i]]) +
       binomial_lpmf( N_obs[MI_nnzero_idx[i]] | N_obs_max, prob_seq_any[MI_nnzero_idx[i]] ) - 
         log1m_exp( two_times_N_obs_max * log1m_prob_seq_1[MI_nnzero_idx[i]] );
@@ -115,11 +117,11 @@ generated quantities {
   real tmp; 
 
   for ( i in 1:N_ind_with_MI_zero ){
-    ind_log_prob_mi[MI_zero_idx[i]] = log(prob_MI) + 
+    ind_log_prob_mi[MI_zero_idx[i]] = log(prob_MI_baseline) + 
                         binomial_lpmf(  MI_obs[MI_zero_idx[i]] | N_obs[MI_zero_idx[i]], prob_seq_MI[MI_zero_idx[i]] ) + 
                           binomial_lpmf( N_obs[MI_zero_idx[i]] | N_obs_max, prob_seq_any[MI_zero_idx[i]] ) - 
                           log1m_exp( two_times_N_obs_max * log1m_prob_seq_1[MI_zero_idx[i]] );
-    ind_log_prob_mi[MI_zero_idx[i]] -= log_mix(  prob_MI,
+    ind_log_prob_mi[MI_zero_idx[i]] -= log_mix(  prob_MI_baseline,
                         binomial_lpmf(  MI_obs[MI_zero_idx[i]] | N_obs[MI_zero_idx[i]], prob_seq_MI[MI_zero_idx[i]] ) + 
                           binomial_lpmf( N_obs[MI_zero_idx[i]] | N_obs_max, prob_seq_any[MI_zero_idx[i]] ) - 
                           log1m_exp( two_times_N_obs_max * log1m_prob_seq_1[MI_zero_idx[i]] ),

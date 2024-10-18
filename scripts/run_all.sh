@@ -97,6 +97,7 @@ Rscript scripts/calc_stats.R \
 	--empiricalFullAltFit 'fit/211220_allreads_phsc_all_subgraphs_format_par_full_model_alt_summary.tsv' \
 	--empiricalSeqFit 'fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_summary.tsv' \
 	--empiricalCommFit 'fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_comm_type_summary.tsv' \
+	--empiricalSeqCommFit 'fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_comm_type_summary.tsv' \
 	--empiricalSexpeverMenFit 'fit/211220_allreads_phsc_all_subgraphs_format_par_m_extended_model_sexpever_men_summary.tsv' \
 	--empiricalSexpeverMenCompleteFit 'fit/211220_allreads_phsc_all_subgraphs_format_par_m_complete_extended_model_sexpever_men_complete_summary.tsv' \
 	--empiricalVarSelectFit 'fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_hsp_var_select_summary.tsv'
