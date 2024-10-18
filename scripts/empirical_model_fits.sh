@@ -110,7 +110,7 @@ Rscript scripts/run_stan.R \
 	--miDesignMatrix comm_type sequencing_technology \
 	--seqDesignMatrix "sequencing_technology" "sequencing_technology:log10_copies" \
 	--scaleVars 'log10_copies:sequencing_technology' \
-	--populationRiskRatios "sequencing_technology='bait_capture':sequencing_technology='amplicon'"
+	--populationRiskRatios "sequencing_technology='bait_capture':sequencing_technology='amplicon'" \
 	--outAppend sequencing_technology_comm_type
 
 

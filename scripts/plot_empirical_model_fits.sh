@@ -54,7 +54,7 @@ Rscript scripts/plot_fit_param_prior_posterior.R \
 	--out empirical_full_prior \
 	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_full_model_.Rds  \
 	--plotParams config/tmp.tsv \
-	--nRowPer 2
+	--nRowPer 3
 rm -rf config/tmp.tsv
 
 # PARAMS
@@ -64,7 +64,7 @@ Rscript scripts/plot_fit_params.R \
 	--out empirical_full_params \
 	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_full_model_.Rds \
 	--plotParams config/tmp.tsv \
-	--nRowPer 2 
+	--nRowPer 3
 rm -rf config/tmp.tsv
 
 
