@@ -1,0 +1,17 @@
+param	label	simple_label
+logit_prob_seq_baseline	"expression(atop('logit(sequencing success):', paste('intercept (', alpha[0], ')')))"	alpha_0
+logit_prob_seq_coeffs[1]	"expression(atop('logit(sequencing success):', paste('VL coefficient (', alpha[1], ')')))"	alpha_1
+logit_prob_seq_ind_sd	"expression(atop('logit(sequencing success):', paste('random effects std. dev. (', sigma[alpha], ')')))"	sigma_alpha
+prob_mi_fnr	"expression(paste('false negative rate (', lambda, ')'))"	lambda
+prob_mi_fpr	"expression(paste('false positive rate (', epsilon, ')'))"	epsilon
+logit_prob_mi_baseline	"expression(atop('logit(prob. MI):', paste('intercept (', delta[0], ')')))"	delta_0
+logit_prob_mi_coeffs[1]	"expression(atop('logit(prob. MI):', paste('risk factor 1 False coeff. (', beta[1], ')')))"	beta_1
+logit_prob_mi_coeffs[2]	"expression(atop('logit(prob. MI):', paste('risk factor 1 True coeff. (', beta[2], ')')))"	beta_2
+logit_prob_mi_coeffs[3]	"expression(atop('logit(prob. MI):', paste('risk factor 2 False coeff. (', beta[3], ')')))"	beta_3
+logit_prob_mi_coeffs[4]	"expression(atop('logit(prob. MI):', paste('risk factor 2 True coeff. (', beta[4], ')')))"	beta_4
+logit_prob_mi_coeffs[5]	"expression(atop('logit(prob. MI):', paste('risk factor 3 False coeff. (', beta[4], ')')))"	beta_5
+logit_prob_mi_coeffs[6]	"expression(atop('logit(prob. MI):', paste('risk factor 3 True coeff. (', beta[4], ')')))"	beta_6
+logit_prob_mi_coeffs[7]	"expression(atop('logit(prob. MI):', paste('risk factor 4 False coeff. (', beta[4], ')')))"	beta_7
+logit_prob_mi_coeffs[8]	"expression(atop('logit(prob. MI):', paste('risk factor 4 True coeff. (', beta[4], ')')))"	beta_8
+logit_prob_mi_coeffs[9]	"expression(atop('logit(prob. MI):', paste('risk factor 5 False coeff. (', beta[4], ')')))"	beta_9
+logit_prob_mi_coeffs[10]	"expression(atop('logit(prob. MI):', paste('risk factor 5 True coeff. (', beta[4], ')')))"	beta_10

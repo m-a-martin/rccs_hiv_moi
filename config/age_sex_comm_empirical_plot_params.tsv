@@ -1,0 +1,10 @@
+param	label	simple_label
+logit_prob_seq_baseline	"expression(atop('sequencing success:', paste('intercept (', alpha[0], ')')))"	alpha_0
+logit_prob_seq_coeffs[1]	expression(atop('logit(seq. success):', paste('bait capture coeff. (',alpha^"bait", ')')))	alpha^bait
+logit_prob_seq_coeffs[2]	expression(atop('logit(seq. success):', paste('amplicon VL coeff. (',alpha^"amplicon-vl", ')')))	alpha^amplicon-vl
+logit_prob_seq_coeffs[3]	expression(atop('logit(seq. success):', paste('bait capture VL coeff. (',alpha^"bait-vl", ')')))	alpha^bait-vl
+logit_prob_seq_ind_sd	"expression(atop('sequencing success:', paste('random effects std. dev. (', sigma[alpha], ')')))"	sigma_alpha
+prob_MI_fnr	"expression(paste('false negative rate (', lambda, ')'))"	lambda
+prob_MI_fpr	"expression(paste('false positive rate (', epsilon, ')'))"	epsilon
+logit_prob_MI	"expression(atop('logit(prob. MI):', paste('intercept (', delta[0], ')')))"	delta_0
+logit_prob_MI_coeffs[1]	"expression(atop('logit(prob. MI):', paste('fishing coeff. (',beta[1], ')')))"	beta_1

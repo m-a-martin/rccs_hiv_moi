@@ -1,0 +1,50 @@
+param	label	simple_label
+logit_prob_seq_baseline	"expression(atop('sequencing success:', paste('intercept (', alpha[0], ')')))"	alpha_0
+logit_prob_seq_coeffs[1]	"expression(atop('logit(seq. success):', paste('amplicon coeff. (',alpha[1], ')')))"	alpha_1
+logit_prob_seq_coeffs[2]	"expression(atop('logit(seq. success):', paste('bait coeff. (',alpha[2], ')')))"	alpha_2
+logit_prob_seq_coeffs[3]	"expression(atop('logit(seq. success):', paste('VL coeff. (',alpha[3], ')')))"	alpha_3
+logit_prob_seq_coeffs[4]	"expression(atop('logit(seq. success):', paste('amplicon'%*%'VL coeff. (',alpha[4], ')')))"	alpha_4
+logit_prob_seq_coeffs[5]	"expression(atop('logit(seq. success):', paste('bait'%*%'VL coeff. (',alpha[5], ')')))"	alpha_5
+logit_prob_seq_ind_sd	"expression(atop('sequencing success:', paste('rand. effects std. dev. (', sigma[alpha], ')')))"	sigma_alpha
+prob_mi_fnr	"expression(paste('false negative rate (', lambda, ')'))"	lambda
+prob_mi_fpr	"expression(paste('false positive rate (', epsilon, ')'))"	epsilonn
+logit_prob_mi_baseline	"expression(atop('logit(prob. MI):', paste('intercept (', delta[0], ')')))"	delta_0
+logit_prob_mi_coeffs[1]	"expression(atop('logit(prob. MI):', paste('amplicon coeff. (',beta[1], ')')))"	beta_1
+logit_prob_mi_coeffs[2]	"expression(atop('logit(prob. MI):', paste('bait coeff. (',beta[2], ')')))"	beta_2
+logit_prob_mi_coeffs[3]	"expression(atop('logit(prob. MI):', paste('round14 coeff. (',beta[3], ')')))"	beta_3
+logit_prob_mi_coeffs[4]	"expression(atop('logit(prob. MI):', paste('round15 coeff. (',beta[4], ')')))"	beta_4
+logit_prob_mi_coeffs[5]	"expression(atop('logit(prob. MI):', paste('round16 coeff. (',beta[5], ')')))"	beta_5
+logit_prob_mi_coeffs[6]	"expression(atop('logit(prob. MI):', paste('round17 coeff. (',beta[6], ')')))"	beta_6
+logit_prob_mi_coeffs[7]	"expression(atop('logit(prob. MI):', paste('round18 coeff. (',beta[7], ')')))"	beta_7
+logit_prob_mi_coeffs[8]	"expression(atop('logit(prob. MI):', paste('round19 coeff. (',beta[8], ')')))"	beta_8
+logit_prob_mi_coeffs[9]	"expression(atop('logit(prob. MI):', paste('uncircumcised coeff. (',beta[9], ')')))"	beta_9
+logit_prob_mi_coeffs[10]	"expression(atop('logit(prob. MI):', paste('circumcised coeff. (',beta[10], ')')))"	beta_10
+logit_prob_mi_coeffs[11]	"expression(atop('logit(prob. MI):', paste('fishing coeff. (',beta[11], ')')))"	beta_11
+logit_prob_mi_coeffs[12]	"expression(atop('logit(prob. MI):', paste('inland coeff. (',beta[12], ')')))"	beta_12
+logit_prob_mi_coeffs[13]	"expression(atop('logit(prob. MI):', paste('women coeff. (',beta[13], ')')))"	beta_13
+logit_prob_mi_coeffs[14]	"expression(atop('logit(prob. MI):', paste('men coeff. (',beta[14], ')')))"	beta_14
+logit_prob_mi_coeffs[15]	"expression(atop('logit(prob. MI):', paste('age (14,24] coeff. (',beta[15], ')')))"	beta_15
+logit_prob_mi_coeffs[16]	"expression(atop('logit(prob. MI):', paste('age (24,34] coeff. (',beta[16], ')')))"	beta_16
+logit_prob_mi_coeffs[17]	"expression(atop('logit(prob. MI):', paste('age (34,49] coeff. (',beta[17], ')')))"	beta_17
+logit_prob_mi_coeffs[18]	"expression(atop('logit(prob. MI):', paste('non-migrant coeff. (',beta[18], ')')))"	beta_18
+logit_prob_mi_coeffs[19]	"expression(atop('logit(prob. MI):', paste('migrant coeff. (',beta[19], ')')))"	beta_19
+logit_prob_mi_coeffs[20]	"expression(atop('logit(prob. MI):', paste('non-barworker coeff. (',beta[20], ')')))"	beta_20
+logit_prob_mi_coeffs[21]	"expression(atop('logit(prob. MI):', paste('barworker coeff. (',beta[21], ')')))"	beta_21
+logit_prob_mi_coeffs[22]	"expression(atop('logit(prob. MI):', paste('women'%*%'fishing coeff. (',beta[22], ')')))"	beta_22
+logit_prob_mi_coeffs[23]	"expression(atop('logit(prob. MI):', paste('men'%*%'fishing coeff. (',beta[23], ')')))"	beta_23
+logit_prob_mi_coeffs[24]	"expression(atop('logit(prob. MI):', paste('women'%*%'inland coeff. (',beta[24], ')')))"	beta_24
+logit_prob_mi_coeffs[25]	"expression(atop('logit(prob. MI):', paste('men'%*%'inland coeff. (',beta[25], ')')))"	beta_25
+logit_prob_mi_coeffs[26]	"expression(atop('logit(prob. MI):', paste('age (14,24]'%*%'fishing coeff. (',beta[26], ')')))"	beta_26
+logit_prob_mi_coeffs[27]	"expression(atop('logit(prob. MI):', paste('age (24,34]'%*%'fishing coeff. (',beta[27], ')')))"	beta_27
+logit_prob_mi_coeffs[28]	"expression(atop('logit(prob. MI):', paste('age (34,49]'%*%'fishing coeff. (',beta[28], ')')))"	beta_28
+logit_prob_mi_coeffs[29]	"expression(atop('logit(prob. MI):', paste('age (14,24]'%*%'inland coeff. (',beta[29], ')')))"	beta_29
+logit_prob_mi_coeffs[30]	"expression(atop('logit(prob. MI):', paste('age (24,34]'%*%'inland coeff. (',beta[30], ')')))"	beta_30
+logit_prob_mi_coeffs[31]	"expression(atop('logit(prob. MI):', paste('age (34,49]'%*%'inland coeff. (',beta[31], ')')))"	beta_31
+logit_prob_mi_coeffs[32]	"expression(atop('logit(prob. MI):', paste('non-migrant'%*%'fishing coeff. (',beta[32], ')')))"	beta_32
+logit_prob_mi_coeffs[33]	"expression(atop('logit(prob. MI):', paste('migrant'%*%'fishing coeff. (',beta[33], ')')))"	beta_33
+logit_prob_mi_coeffs[34]	"expression(atop('logit(prob. MI):', paste('non-migrant'%*%'inland coeff. (',beta[34], ')')))"	beta_34
+logit_prob_mi_coeffs[35]	"expression(atop('logit(prob. MI):', paste('migrant'%*%'inland coeff. (',beta[35], ')')))"	beta_35
+logit_prob_mi_coeffs[36]	"expression(atop('logit(prob. MI):', paste('non-barworker'%*%'fishing coeff. (',beta[36], ')')))"	beta_36
+logit_prob_mi_coeffs[37]	"expression(atop('logit(prob. MI):', paste('barworker'%*%'fishing coeff. (',beta[37], ')')))"	beta_37
+logit_prob_mi_coeffs[38]	"expression(atop('logit(prob. MI):', paste('non-barworker'%*%'inland coeff. (',beta[38], ')')))"	beta_38
+logit_prob_mi_coeffs[39]	"expression(atop('logit(prob. MI):', paste('barworker'%*%'inland coeff. (',beta[39], ')')))"	beta_39
