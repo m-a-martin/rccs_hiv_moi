@@ -51,10 +51,10 @@ for (jdx in 1:length(fit_paths)){
 	for (idx in seq(1,nrow(plot_params))){
 		param = plot_params$param[idx]
 		p_dat = as_tibble(fit$draws(
-				variables = c(param),
+				  variables = c(if_else(param == "prob_mi_baseline", 'prob_mi[1]', param)),
 				  inc_warmup = FALSE,
 				  format = "draws_df")) %>%
-			select(all_of(param))
+			select(all_of(if_else(param == "prob_mi_baseline", 'prob_mi[1]', param)))
 		# get HPD bounds
 		bounds95 = hdi(p_dat, credMass=0.95)[,1]
 		bounds50 = hdi(p_dat, credMass=0.50)[,1]
@@ -74,7 +74,7 @@ for (jdx in 1:length(fit_paths)){
 				true_val = params_dict[[param]]
 			}
 		}
-		if (param == "prob_MI_baseline"){
+		if (param == "prob_mi_baseline"){
 			plot_list[[length(plot_list)+1]] = plot_shadded_hist(p_dat, bounds, approx_bins=50,
 				cols=c(unname(args$colors_dict["mi_hpd3"]), 
 					unname(args$colors_dict["mi_hpd2"]), 

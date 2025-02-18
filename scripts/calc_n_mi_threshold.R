@@ -27,7 +27,7 @@ p <- add_argument(p, "--dat", help="input data file", nargs=1)
 p <- add_argument(p, "--out", help="output figure name", nargs=1)
 args <- parse_args(p)
 
-#args$fit = 'fit/211220_allreads_phsc_all_subgraphs_format_par_full_model_.Rds'
+#args$fit = 'fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_age_sex_comm.Rds'
 #args$dat = 'output/211220_allreads_phsc_all_subgraphs_format_par.tsv'
 
 dat = summarise_n_d(tabulate_n_d(read_tsv(args$dat, show_col_types = FALSE) %>% 
@@ -36,46 +36,35 @@ fit = readRDS(args$fit)
 
 #  number of detected MIs by posterior cut-off
 cutoffs = seq(0.01,1,0.01)
-param=c('prob_MI_baseline', 'ind_log_prob_mi')
+param=c('ind_log_prob_mi')
 
 fit_draws = as_tibble(fit$draws(
 		variables = c(param),
         inc_warmup = FALSE,
         format = "draws_df"))
 
-fit_draws = fit_draws[,(!grepl('ppr', colnames(fit_draws)) & 
-    !grepl('prob_seq_any', colnames(fit_draws)) & 
-    !grepl('prob_seq_1', colnames(fit_draws)) & 
-    !grepl('prob_seq_MI', colnames(fit_draws)) & 
-    !grepl('N_nnzero_times_log_prob_MI', colnames(fit_draws)) & 
-    !grepl('X_mi_missing', colnames(fit_draws)))] %>%
+fit_draws = fit_draws[,(!grepl('.draw', colnames(fit_draws)) & 
+    !grepl('.chain', colnames(fit_draws)) & 
+    !grepl('.iteration', colnames(fit_draws)))] %>%
   mutate(cit = seq(1,n())) %>%
-  pivot_longer(-cit)
+  pivot_longer(-cit) %>%
+  mutate(value = exp(value))
 
-p_dat = bind_rows(
-	fit_draws %>%
-		mutate(value = exp(value)) %>% 
-	    group_by(name) %>% 
-	    group_map(~get_hpd(.x$value) %>% 
-	    mutate(name=.y$name))) %>%
-	rename(`0.025` = lower, `0.975` =upper) %>%
-	left_join(
-		bind_rows(
-			fit_draws %>%
-				mutate(value = exp(value)) %>% 
-			    group_by(name) %>% 
-			    group_map(~get_hpd(.x$value, credMass=0.50) %>% 
-			    mutate(name=.y$name))) %>%
-		rename(`0.25` = lower, `0.75`=upper),
-		by='name') %>%
-	left_join(
-		fit_draws %>%
-			mutate(value = exp(value)) %>% 
-		    group_by(name) %>%
-		    summarise(`0.50`=median(value)),
-		by='name') %>%
-	filter(name != '.chain' & name != '.draw' & name != '.iteration') %>%
-	mutate(name = gsub('_log', '', name))
+p_dat = bind_rows(fit_draws %>%
+	  group_by(name) %>% 
+	    group_map(
+	    	~bind_cols(
+	    		get_hpd(.x$value) %>% 
+			    	rename(
+			    		`0.025` = 'lower',
+			    		`0.975` = 'upper'),
+		    	get_hpd(.x$value, credMass = 0.50) %>% 
+			    	rename(
+			    		`0.25` = 'lower',
+			    		`0.75` = 'upper')) %>%
+	    		mutate(
+	    			`0.50` = median(.x$value),
+	    			name = gsub('_log', '', .y$name))))
 
 p_dat = p_dat %>% 
 	rename(id = name) %>%
@@ -89,8 +78,11 @@ n_mi_cutoff = bind_rows(lapply(cutoffs,
 n_mi_cutoff = n_mi_cutoff %>% pivot_wider(names_from=name, values_from=n_mi)
 
 # estimated median prevalence of multiple infections
-estimated_n_mi = (fit_draws %>% filter(name == 'prob_MI_baseline') %>% summarise(m = median(value)))$m * 
-	length(unique(p_dat$id))
+estimated_n_mi = (fit_draws %>% group_by(cit) %>%
+		summarise(
+			name = 'prob_mi', 
+			value = mean(value), .groups='drop') %>%
+		summarise(m=median(value)))$m * length(unique(p_dat$id))
 
 n_mi_threshold = n_mi_cutoff %>% pivot_longer(-cutoff) %>%
 	filter(value <= estimated_n_mi) %>%

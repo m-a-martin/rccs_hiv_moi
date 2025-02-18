@@ -1,4 +1,82 @@
 
+generate_dm = function(d, model=c()){
+  if (!all(is.na(model))){
+    require(tidyverse)
+    make_indicator_vars = function(d2, cov){
+      return(d2 %>% 
+            mutate(idx = seq(1,n()), x=1) %>%
+            select(all_of(c('idx', cov, 'x'))) %>%
+            pivot_wider(
+              names_from=all_of(cov),
+              values_from=x, 
+              values_fill=0) %>%
+            select(-idx) %>%
+            rename_with(~paste0(cov, .), names(.)) %>%
+            select(all_of(sort(names(.)))))
+    }
+    # create empty design matrix 
+    dm = d[,0]
+    # log the category of each design matrix
+    beta_cats = c()
+    n_beta_cats = 1
+    for (cov_idx in 1:length(model)){
+      cov = model[cov_idx]
+      cov_dms = list()
+      # split on "*" to account for interaction terms
+      # assumes at most pairwise interaction, 
+      # could probably adjust but no at present
+      cov_split = str_split(cov, "\\*", simplify=TRUE)[1,]
+      for (i_cov in cov_split){
+        if (is.numeric(d[[i_cov]])){
+          cov_dms[[length(cov_dms)+1]] = d[i_cov]
+        }else{
+          cov_dms[[length(cov_dms)+1]] = make_indicator_vars(d, i_cov)
+        }
+      }
+      # in the case of no interaction term
+      if (length(cov_dms) == 1){
+        cov_dms[[2]] = as.matrix(rep(1,nrow(d)))
+      }
+      # iterate over levels of the *second* covariate and
+      # generate a design matrix for the *first*
+      # coeffs within the first covariate sum to zero given the second
+      for (col in 1:ncol(cov_dms[[2]])){
+        dm = bind_cols(dm,
+          tibble(cov_dms[[1]] * t(cov_dms[[2]][,col])) %>%
+            rename_with(~paste0(., "*", colnames(cov_dms[[2]])[col])))
+        beta_cats = c(beta_cats, rep(n_beta_cats,ncol(cov_dms[[1]])))
+        n_beta_cats = n_beta_cats + 1
+      }
+    }
+    # remove trailing colon when no interaction term
+    colnames(dm) = gsub("\\*$", "", colnames(dm))
+    out=list()
+    out$dm = dm
+    out$beta_cats = beta_cats
+  }else{
+    out = list()
+    out$dm = vector('numeric')
+    out$beta_cats = vector('character')
+  }
+  return(out)
+}
+
+
+calc_post_strata = function(d, strata_vars){
+	require(tidyverse)
+	return(bind_rows(
+		d %>% filter(round >= 16) %>% 
+			group_by_at(strata_vars) %>%
+			summarise(n = n(), .groups='drop') %>%
+			mutate(p = n / sum(n)) %>%
+			mutate(type = 'participant-visits'),
+		d %>% filter(phsc_par == TRUE) %>%
+			group_by_at(strata_vars) %>%
+			summarise(n = n(), .groups='drop') %>%
+			mutate(p = n / sum(n)) %>%
+			mutate(type = 'phsc')))
+}
+
 
 get_hpd = function(x, credMass=0.95){
 	suppressMessages(require(HDInterval))
@@ -54,19 +132,25 @@ read_format_rccs_dat = function(rccs_df){
 }
 
 
-
 tabulate_n_d = function(x){
 	# subgraph specific columns = 
-	# sample_subgraph_reads
+	# subgraph_reads_all
+	# subgraph_freq_all
+	# id_subgraph_reads
+	# id_subgraph_reads_all
 	# sg
-	# dist
-	return(x %>%
-		group_by(across(-c(id_subgraph_reads, sg, id_min_sg_dist, min_sg_dist))) %>%
+	# id_min_sg_dist
+	# min_sg_dist
+	return(x %>% 
+		group_by(across(-c(subgraph_reads_all, subgraph_freq_all, 
+			id_subgraph_reads, id_subgraph_reads_all, 
+			sg, id_min_sg_dist, min_sg_dist))) %>%
 		summarise(
 			n = 1, 
 			n_subgraphs = length(unique(sg)), 
 			d = 1*(n_subgraphs > 1), .groups='drop'))
 }
+
 
 summarise_n_d = function(x){
 	x = x %>%
@@ -123,7 +207,7 @@ fancy_scientific <- function(l) {
 }
 
 
-plot_ind_posterior_pred = function(dat, fit, colors_dict, grouping="empirical", guide=FALSE){
+plot_ind_posterior_pred = function(dat, fit, colors_dict, grouping="empirical", guide=FALSE, transform=TRUE){
 	suppressMessages(require(tidyverse))
 	fit_dat = as_tibble(fit$draws(
 			variables = c("ind_log_prob_mi"),
@@ -137,9 +221,8 @@ plot_ind_posterior_pred = function(dat, fit, colors_dict, grouping="empirical", 
 	# transform
 	fit_dat = fit_dat %>% 
 		mutate(
-			value = exp(value),
-			name=gsub('_log', '', name))
-		
+			value = exp(value))
+	
 	# median value
 	fit_dat_sum = fit_dat %>%
 	  group_by(name) %>% 
@@ -191,6 +274,13 @@ plot_ind_posterior_pred = function(dat, fit, colors_dict, grouping="empirical", 
 		ylab('posterior prob. of\nmultiple infection') +
 		gtheme +
 		theme(legend.justification.inside=c(0,1))
+	if (transform == FALSE){
+		suppressMessages(require(scales))
+		p = p +
+			scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
+          		labels = trans_format("log10", math_format(10^.x)),
+          		name = 'posterior\nlog(prob. multiple infection)')
+	}
 	return(p)
 }
 
@@ -203,7 +293,10 @@ plot_shadded_hist = function(d, bounds, approx_bins=100, cols=c('#eaeaea', '#ada
 	# probably a function that exists for this
 	# but fun challenge to rewrite one
 	# assumes unimodality
+	print(max(d[,1]))
+	print(min(d[,1]))
 	bw = clean_numeric((max(d[,1]) - min(d[,1]))/approx_bins)
+	print(bw)
 	ll = floor(min(d[,1])/bw)*bw
 	ul = ceiling(max(d[,1])/bw)*bw
 	breaks = seq(ll, ul, bw)
@@ -272,11 +365,13 @@ plot_n_d_scatter = function(d, colors_dict, grouping="empirical", prediction=tib
 			'FALSE'="0 multiple subgraph windows",
 			'TRUE'='expression(paste("">=1, " multiple subgraph windows"))')
 		highlight_color = unname(colors_dict['multiple_subgraphs'])
+		name = NULL
 	}else if (grouping == "truth"){
 		d = d %>% mutate(group = as.logical(has_MI))
 		labels=c('FALSE'="singly infected",
 			'TRUE'="multiply infected")
 		highlight_color = unname(colors_dict['multiply_infected'])
+		name = 'simulated infection status'
 	}
 	colnames(prediction) = c('x', 'y')
 	p1 = ggplot(d, aes(x=N_obs_jitter, y=MI_obs_jitter, color=group, alpha=group)) +
@@ -288,7 +383,7 @@ plot_n_d_scatter = function(d, colors_dict, grouping="empirical", prediction=tib
 	p1 = p1  +
 		scale_color_manual(values=c(
 			'TRUE'=highlight_color, 
-			'FALSE'='#333333'), labels=eval_labels(labels), name=NULL) +
+			'FALSE'='#333333'), labels=eval_labels(labels), name=name) +
 		guides(colour = guide_legend(override.aes = list(size=4, alpha = 1), alpha=1, position='inside')) +
 		scale_alpha_manual(values=c('TRUE'=1, 'FALSE'=0.25), guide='none') + 
 		scale_x_continuous(

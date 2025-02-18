@@ -334,6 +334,28 @@ calc_phsc_input = function(out, metadata){
 	return(out)
 }
 
+
+calc_weight_stats = function(out, metadata, round_digits){
+	labels = out[["labels"]]
+	vals = out[['vals']]
+	ps = calc_post_strata(metadata, c("age_cat_coarse", "sex", "comm_type"))
+	ps_dat = ps %>% 
+		mutate(p = round(p *100, round_digits)) %>%
+		pivot_longer(-c(sex, age_cat_coarse, comm_type, type)) %>%
+		mutate(
+			sex = paste('sex_', sex, sep=''),
+			age_cat_coarse = paste('age_cat_coarse_', age_cat_coarse, sep=''),
+			comm_type = paste('comm_type_', comm_type, sep=''),
+			type = case_when(
+				type == 'participant-visits' ~ 'viremic_participant_visits',
+				type == 'phsc' ~ 'phsc_participants')) %>%
+		select(age_cat_coarse, sex, comm_type, name, type, value) %>%
+		unite("label", age_cat_coarse:type)
+	out[["labels"]] = c(labels, ps_dat$label)
+	out[["vals"]] = c(vals, ps_dat$value)
+	return(out)
+}
+
 calc_phsc_output = function(out, phsc_dat, round_digits=2){
 	# unpack input
 	labels = out[["labels"]]
@@ -343,9 +365,9 @@ calc_phsc_output = function(out, phsc_dat, round_digits=2){
 	#vals = c(vals, median((phsc_dat %>% group_by(study_id, round) %>% summarise(n=n()))$n))
 	#labels = c(labels, "sd_cov_all_windows")
 	#vals = c(vals, round(sd((phsc_dat %>% group_by(study_id, round) %>% summarise(n=n()))$n), 2))
-	all_n_d_i = summarise_n_d(tabulate_n_d(phsc_dat)) %>% 
+	all_n_d_i = summarise_n_d(tabulate_n_d(phsc_dat %>% filter(id_subgraph_reads > 0))) %>% 
 		select(id, study_id, run, log10_copies, sequencing_technology, N_obs, MI_obs)
-	uniq_n_d_i = summarise_n_d(tabulate_n_d(phsc_dat %>% filter(window_type == "unique"))) %>% 
+	uniq_n_d_i = summarise_n_d(tabulate_n_d(phsc_dat %>% filter(id_subgraph_reads > 0 & window_type == "unique"))) %>% 
 		select(id, study_id, run, log10_copies, sequencing_technology, N_obs, MI_obs)
 	n_d_i = all_n_d_i %>% full_join(uniq_n_d_i, by=c('id', 'study_id', 'run', 'log10_copies')) %>%
 		mutate(N_obs.y = replace_na(N_obs.y, 0),
@@ -354,7 +376,7 @@ calc_phsc_output = function(out, phsc_dat, round_digits=2){
 	vals=c(vals, round(cor(n_d_i$N_obs.x, n_d_i$N_obs.y, method = 'pearson'), round_digits))
 	labels=c(labels, 'all_unique_mi_corr')
 	vals=c(vals, round(cor(n_d_i$MI_obs.x, n_d_i$MI_obs.y, method = 'pearson'), round_digits))
-	alt_uniq_n_d_i = summarise_n_d(tabulate_n_d(phsc_dat %>% filter(window_type == "unique_alt"))) %>% 
+	alt_uniq_n_d_i = summarise_n_d(tabulate_n_d(phsc_dat %>% filter(id_subgraph_reads > 0 & window_type == "unique_alt"))) %>% 
 		select(id, study_id, run, log10_copies, sequencing_technology, N_obs, MI_obs)
 	alt_n_d_i = uniq_n_d_i %>% full_join(alt_uniq_n_d_i, by=c('id', 'study_id', 'run', 'log10_copies')) %>%
 		mutate(
@@ -456,7 +478,7 @@ calc_phsc_output = function(out, phsc_dat, round_digits=2){
 	vals = c(vals, round(IQR(x$id_min_sg_dist), round_digits))
 	# sexpever responses among men, including only first participant visits
 	men_first_pv = summarise_n_d(tabulate_n_d(
-			phsc_dat %>% filter(window_type == 'unique'))) %>% 
+			phsc_dat %>% filter(id_subgraph_reads > 0 & window_type == 'unique'))) %>% 
 		select(study_id, sex, sexpever, plhiv_sexpever_std, round, N_obs, log10_copies) %>%
 		group_by(study_id) %>%
 		filter(N_obs == max(N_obs)) %>%
@@ -501,7 +523,15 @@ calc_fit_output = function(out, name, param, f){
 		vals = c(vals, format(as.numeric((param %>% filter(arg == 'N_ind'))$value), big.mark=','))
 	}
 	# rates so multiply by 100
-	for (r in c('prob_MI_baseline', 'prob_MI_fpr', 'prob_MI_fnr', f$name[grepl('risk_', f$name)])){
+	for (r in c(
+			# average prob MI across all samples
+			# fpr & fnr
+			f$name[(grepl('prob_mi',f$name) & !grepl('\\[', f$name) & !grepl('coeffs', f$name))| 
+				(f$name == 'prob_mi_fpr') | 
+				(f$name == 'prob_mi_fnr')],
+			# strata prob mi captured in the above
+			# weighted prob MI from poststratification, includes strata weighted prob MI
+			f$name[grepl('wprob_mi', f$name)])){
 		r_out = str_replace(str_replace(r, '\\]', ''), '\\[', '')
 		# simulated value, if included in parameters
 		if (!all(is.na(param))){
@@ -512,30 +542,35 @@ calc_fit_output = function(out, name, param, f){
 			}
 		}
 		# fit value, if included in fit
-		if (r %in% f$name){
-			f_r = f %>% filter(name == r)
-			for (col in c('median', 'lower', 'upper')){
-				labels = c(labels, paste(c(name, '_fit_', r_out, '_', col, '_percent'), collapse=''))
-				vals = c(vals, round(100*f_r[col][[1]], round_digits))
-			}
-			col = 'median'
-			if (r == 'prob_MI_baseline'){
-				labels = c(labels, paste(c(name, '_fit_', r_out, '_', col, '_percent_int'), collapse=''))
-				vals = c(vals, round(100*f_r[col][[1]], 0))
-			}
+		f_r = f %>% filter(name == r)
+		for (col in c('median', 'lower', 'upper')){
+			labels = c(labels, paste(c(name, '_fit_', r_out, '_', col, '_percent'), collapse=''))
+			vals = c(vals, round(100*f_r[col][[1]], round_digits))
+		}
+		col = 'median'
+		if (r == 'prob_mi' | grepl('wprob_mi', r)){
+			labels = c(labels, paste(c(name, '_fit_', r_out, '_', col, '_percent_int'), collapse=''))
+			vals = c(vals, round(100*f_r[col][[1]], 0))
 		}
 	}
 	# not rates so don't multiply 
-	for (r in c('logit_prob_seq_baseline', 'logit_prob_seq_coeffs[1]', 
-		'logit_prob_seq_coeffs[2]', 'logit_prob_seq_coeffs[3]', 
-		'logit_prob_seq_ind_sd', 
-	  'logit_prob_MI', 'logit_prob_MI_fpr', 'logit_prob_MI_fnr',
-	  f$name[grepl('logit_prob_MI_coeffs\\[', f$name)],
-	  f$name[grepl('w\\[', f$name)], 
-	  'tau', 
-	  		f$name[grepl('lambda', f$name)],
-			f$name[grepl('rr_', f$name)])){
+	for (r in c(
+			f$name[grepl("logit_prob_seq", f$name) & !grepl("ind", f$name)],
+			f$name[grepl('logit_prob_seq_ind_sd', f$name)], 
+			f$name[grepl("logit_prob_mi_baseline", f$name)],
+			f$name[grepl("logit_prob_mi_fpr", f$name)],
+			f$name[grepl("logit_prob_mi_fnr", f$name)],
+			f$name[grepl("logit_prob_mi_coeffs", f$name)],
+		  	f$name[grepl('tau', f$name)], 
+		  	f$name[grepl('lambda', f$name)],
+		  	# strata prevance ratio
+			f$name[grepl('pr_mi_', f$name)],
+			# strata multivariate risk ratio
+			f$name[grepl('multivar_rr_mi_', f$name)],
+			# weighted strava prevalence ratio from poststratification
+			f$name[grepl('wpr_mi_', f$name)])){
 		r_out = str_replace(str_replace(r, '\\]', ''), '\\[', '')
+		# if there are simulation parameters provided
 		if (!all(is.na(param))){
 			if (r %in% param$arg){
 				# simulated FPR
@@ -543,23 +578,22 @@ calc_fit_output = function(out, name, param, f){
 				vals = c(vals, round(as.numeric((param %>% filter(arg == r))$value), round_digits))
 			}
 		}
-		# fit value, if included in fit
-		if (r %in% f$name){
-			f_r = f %>% filter(name == r)
-			r_round_digits = round_digits
-			if (r == "prob_MI_fpr"){r_round_digits = round_digits*2}
-			for (col in c('median', 'lower', 'upper')){
-				labels = c(labels, paste(c(name, '_fit_', r_out, '_', col), collapse=''))
-				vals = c(vals, round(f_r[col][[1]], r_round_digits))
-			}
-			for (col in c('bulk_ess', 'tail_ess', 'rhat')){
-				labels = c(labels, paste(c(name, '_fit_', r_out, '_', col), collapse=''))
-				vals = c(vals, round(f_r[col][[1]], round_digits))
-			}
+		f_r = f %>% filter(name == r)
+		r_round_digits = round_digits
+		if (r == "prob_mi_fpr"){r_round_digits = round_digits*2}
+		for (col in c('median', 'lower', 'upper')){
+			labels = c(labels, paste(c(name, '_fit_', r_out, '_', col), collapse=''))
+			vals = c(vals, round(f_r[col][[1]], r_round_digits))
+		}
+		for (col in c('bulk_ess', 'tail_ess', 'rhat')){
+			labels = c(labels, paste(c(name, '_fit_', r_out, '_', col), collapse=''))
+			vals = c(vals, round(f_r[col][[1]], round_digits))
 		}
 	}
-	labels = c(labels, paste(name, '_n_participant_visits', sep=''))
-	vals = c(vals, format(f %>% select(idx) %>% drop_na() %>% max(), big.mark=','))
+	if (any(!is.na(f$idx))){
+		labels = c(labels, paste(name, '_n_participant_visits', sep=''))
+		vals = c(vals, format(f %>% select(idx) %>% drop_na() %>% max(), big.mark=','))
+	}
 	# repack output
 	out[["labels"]] = labels
 	out[["vals"]] = vals
@@ -571,87 +605,67 @@ calc_fit_output = function(out, name, param, f){
 p <- arg_parser("plot summary of simulated data")
 p <- add_argument(p, "--phscDat", help="phyloscanner data file", nargs=1)
 p <- add_argument(p, "--metadata", help="rccs data file", nargs=1)
-p <- add_argument(p, "--baseBaseFit", help="base simulation fit to base model summary", nargs=1)
-p <- add_argument(p, "--baseParams", help="base model parameters", nargs=1)
-p <- add_argument(p, "--fullBaseFit", help="full simulation fit to base model summary", nargs=1)
-p <- add_argument(p, "--fullFullFit", help="full simulation fit to base model summary", nargs=1)
-p <- add_argument(p, "--fullParams", help="full model parameters", nargs=1)
-p <- add_argument(p, "--extExtFit", help="ext simulation fit to ext model summary", nargs=1)
-p <- add_argument(p, "--extParams", help="ext model parameters", nargs=1)
-p <- add_argument(p, "--empiricalFullFit", help="full model fit to empirical data", nargs=1)
-p <- add_argument(p, "--empiricalFullAltFit", help="full model fit to empirical data", nargs=1)
-p <- add_argument(p, "--empiricalSeqFit", help="full model fit to empirical data", nargs=1)
-p <- add_argument(p, "--empiricalCommFit", help="full model fit to empirical data", nargs=1)
-p <- add_argument(p, "--empiricalSeqCommFit", help="full model fit to empirical data", nargs=1)
-p <- add_argument(p, "--empiricalSexpeverMenFit", help="full model fit to empirical data", nargs=1)
-p <- add_argument(p, "--empiricalSexpeverMenCompleteFit", help="full model fit to empirical data", nargs=1)
-p <- add_argument(p, "--empiricalVarSelectFit", help="full model fit to empirical data", nargs=1)
+p <- add_argument(p, "--fits", help="model fit summaries", nargs=Inf)
+p <- add_argument(p, "--labels", help="model fit labels", nargs=Inf)
+p <- add_argument(p, "--params", help="model fit params", nargs=Inf)
+p <- add_argument(p, "--empiricalCutoffFit", help="model fit params", nargs=Inf)
+p <- add_argument(p, "--empiricalSexpeverMenFit", help="model fit params", nargs=Inf)
 args <- parse_args(p)
 
 round_digits = 2
 
-
-#args$phscDat = 'output/211220_allreads_phsc_all_subgraphs_format_par.tsv'
+#args$phscDat = 'output/211220_allreads_phsc_all_subgraphs_format_par.tsv' 
 #args$metadata = 'output/211220_allreads_phsc_metadata.tsv'
-#args$baseBaseFit = 'fit/base_simulation_base_model__summary.tsv'
-#args$baseParams = 'simulations/base_simulation_params.tsv'
-#args$fullBaseFit = 'fit/full_simulation_base_model__summary.tsv'
-#args$fullFullFit = 'fit/full_simulation_full_model__summary.tsv'
-#args$extParams = 'simulations/extended_simulation_params.tsv'
-#args$extExtFit = 'fit/extended_simulation_extended_model_hsp__summary.tsv'
-#args$fullParams = 'simulations/full_simulation_params.tsv'
-#args$empiricalFullFit = 'fit/211220_allreads_phsc_all_subgraphs_format_par_full_model__summary.tsv'
-#args$empiricalSeqFit = 'fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_summary.tsv'
-#args$empiricalCommFit = 'fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_comm_type_summary.tsv'
-#args$empiricalSeqCommFit = 'fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_comm_type_summary.tsv'
-#args$empiricalSexpeverMenFit  = 'fit/211220_allreads_phsc_all_subgraphs_format_par_m_extended_model_sexpever_men_summary.tsv'
-#args$empiricalSexpeverMenCompleteFit  = 'fit/211220_allreads_phsc_all_subgraphs_format_par_m_complete_extended_model_sexpever_men_complete_summary.tsv'
-#args$empiricalVarSelectFit = 'fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_hsp_var_select_summary.tsv'
+#args$fits =c(
+#	'fit/base_simulation_base_deep-phyloMI__summary.tsv',
+#	'fit/full_simulation_base_deep-phyloMI__summary.tsv',
+#	'fit/full_simulation_deep-phyloMI__summary.tsv',
+#	'fit/extended_simulation_deep-phyloMI__summary.tsv',
+#	'fit/211220_allreads_phsc_all_subgraphs_format_par_deep-phyloMI_age_sex_comm_summary.tsv',
+#	'fit/211220_allreads_phsc_all_subgraphs_format_par_deep-phyloMI_age_sex_comm_alt_summary.tsv',
+#	'fit/211220_allreads_phsc_all_subgraphs_format_par_deep-phyloMI_age_sex_comm_incl_minor_summary.tsv',
+#	'fit/211220_allreads_phsc_all_subgraphs_format_par_amplicon_tmp_age_sex_comm_amplicon_summary.tsv',
+#	'fit/211220_allreads_phsc_all_subgraphs_format_par_deep-phyloMI_seq_summary.tsv',
+#	'fit/211220_allreads_phsc_all_subgraphs_format_par_deep-phyloMI_comm_seq_summary.tsv',
+#	'fit/211220_allreads_phsc_all_subgraphs_format_par_m_deep-phyloMI_sexpever_men_summary.tsv', 
+#	'fit/211220_allreads_phsc_all_subgraphs_format_par_m_complete_deep-phyloMI_sexpever_men_complete_summary.tsv',
+#	'fit/211220_allreads_phsc_all_subgraphs_format_par_deep-phyloMI_var_select_summary.tsv')
+
+#args$labels = c(
+#	'base_base',
+#	'full_base',
+#	'full_full',
+#	'ext_ext',
+#	'empirical_age_sex_comm',
+#	'empirical_age_sex_comm_alt',
+#	'empirical_age_sex_comm_incl_minor',
+#	'empirical_age_sex_comm_amplicon',
+#	'empirical_seq',
+#	'empirical_comm_seq',
+#	'empirical_sexpever_men',
+#	'empirical_sexpever_men_complete',
+#	'empirical_var_select')
+#args$params = c(
+#	'simulations/base_simulation_params.tsv',
+#	'simulations/full_simulation_params.tsv',
+#	'simulations/full_simulation_params.tsv',
+#	'simulations/extended_simulation_params.tsv',
+#	'NA',
+#	'NA',
+#	'NA',
+#	'NA',
+#	'NA',
+#	'NA',
+#	'NA')
+#args$empiricalCutoffFit = 'fit/211220_allreads_phsc_all_subgraphs_format_par_deep-phyloMI_age_sex_comm_summary.tsv'
+#args$empiricalSexpeverMenFit = 'fit/211220_allreads_phsc_all_subgraphs_format_par_m_deep-phyloMI_sexpever_men_summary.tsv'
+
+
+args$params = if_else(args$params == 'NA', NA, args$params)
 
 # read in data
 phsc_dat = read_tsv(args$phscDat, show_col_types=FALSE)
 metadata = read_tsv(args$metadata, show_col_types=FALSE) 
-base_params = read_tsv(args$baseParams, show_col_types=FALSE)
-base_params = bind_rows(
-	base_params, 
-	tibble(
-		arg=c('logit_prob_MI_fpr', 'logit_prob_MI_fnr'),
-		value=c(
-			as.character(round(logit(as.numeric((base_params %>% filter(arg == 'prob_MI_fpr'))$value)), round_digits)),
-			as.character(round(logit(as.numeric((base_params %>% filter(arg == 'prob_MI_fnr'))$value)), round_digits)))))
-base_base_fit = read_tsv(args$baseBaseFit, show_col_types=FALSE)
-full_params = read_tsv(args$fullParams, show_col_types=FALSE)
-full_params = bind_rows(
-	full_params, 
-	tibble(
-		arg=c('logit_prob_MI_fpr', 'logit_prob_MI_fnr'),
-		value=c(
-			as.character(round(logit(as.numeric((full_params %>% filter(arg == 'prob_MI_fpr'))$value)), round_digits)),
-			as.character(round(logit(as.numeric((full_params %>% filter(arg == 'prob_MI_fnr'))$value)), round_digits)))))
-
-
-full_base_fit = read_tsv(args$fullBaseFit, show_col_types=FALSE)
-full_full_fit = read_tsv(args$fullFullFit, show_col_types=FALSE)
-ext_ext_fit = read_tsv(args$extExtFit, show_col_types=FALSE)
-ext_params = read_tsv(args$extParams, show_col_types=FALSE)
-ext_params = bind_rows(
-	ext_params, 
-	tibble(
-		arg=c('logit_prob_MI_fpr', 'logit_prob_MI_fnr'),
-		value=c(
-			as.character(round(logit(as.numeric((ext_params %>% filter(arg == 'prob_MI_fpr'))$value)), round_digits)),
-			as.character(round(logit(as.numeric((ext_params %>% filter(arg == 'prob_MI_fnr'))$value)), round_digits)))))
-
-
-empirical_full_fit = read_tsv(args$empiricalFullFit, show_col_types=FALSE)
-empirical_full_alt_fit = read_tsv(args$empiricalFullAltFit, show_col_types=FALSE)
-empirical_seq_fit = read_tsv(args$empiricalSeqFit, show_col_types=FALSE)
-empirical_comm_fit = read_tsv(args$empiricalCommFit, show_col_types=FALSE)
-empirical_seq_comm_fit = read_tsv(args$empiricalSeqCommFit, show_col_types=FALSE)
-empirical_sexpever_men_fit = read_tsv(args$empiricalSexpeverMenFit, show_col_types=FALSE)
-empirical_sexpever_men_complete_fit = read_tsv(args$empiricalSexpeverMenCompleteFit, show_col_types=FALSE)
-empirical_var_select_fit = read_tsv(args$empiricalVarSelectFit, show_col_types=FALSE)
-
 
 out = list()
 out[["labels"]] = c()
@@ -664,24 +678,56 @@ out = calc_supp_epi_stats(out, metadata, round_digits=2)
 out = calc_vl_stats(out, metadata, round_digits=round_digits)
 out = calc_phsc_input(out, metadata)
 out = calc_phsc_config(out, phsc_dat)
+out = calc_weight_stats(out, metadata, round_digits)
+
+# %>%
+#		add_row(tibble_row(
+#			arg='logit_prob_mi_fpr', 
+#			value=as.character(round(logit(as.numeric(.$value[.$arg == "prob_mi_fpr"])), round_digits)))) %>% 
+#		add_row(tibble_row(
+#			arg='logit_prob_mi_fnr', 
+#			value=as.character(round(logit(as.numeric(.$value[.$arg == "prob_mi_fnr"])), round_digits))))
+
 # model parameters and results
-out = calc_fit_output(out, 'base_base', base_params, base_base_fit)
-out = calc_fit_output(out, 'full_base', full_params, full_base_fit)
-out = calc_fit_output(out, 'full_full', full_params, full_full_fit)
-out = calc_fit_output(out, 'ext_ext', ext_params, ext_ext_fit)
-out = calc_fit_output(out, 'empirical_full', NA, empirical_full_fit)
-out = calc_fit_output(out, 'empirical_full_alt', NA, empirical_full_alt_fit)
-out = calc_fit_output(out, 'empirical_seq', NA, empirical_seq_fit)
-out = calc_fit_output(out, 'empirical_comm', NA, empirical_comm_fit)
-out = calc_fit_output(out, 'empirical_seq_tech_comm', NA, empirical_seq_comm_fit)
-out = calc_fit_output(out, 'empirical_sexpever_men', NA, empirical_sexpever_men_fit)
-out = calc_fit_output(out, 'empirical_sexpever_men_complete', NA, empirical_sexpever_men_complete_fit)
-out = calc_fit_output(out, 'empirical_var_select', NA, empirical_var_select_fit)
+for (fit_idx in 1:length(args$fits)){
+	if (!is.na(args$params[fit_idx])){
+		params = read_tsv(args$params[fit_idx], show_col_types=FALSE) %>%
+		add_row(tibble_row(
+			arg='logit_prob_mi_fpr', 
+			value=as.character(round(logit(as.numeric(.$value[.$arg == "prob_mi_fpr"])), round_digits)))) %>% 
+		add_row(tibble_row(
+			arg='logit_prob_mi_fnr', 
+			value=as.character(round(logit(as.numeric(.$value[.$arg == "prob_mi_fnr"])), round_digits))))
+	}else{
+		params = NA
+	}
+	out = calc_fit_output(out, args$labels[fit_idx], params, 
+		read_tsv(args$fits[fit_idx], show_col_types=FALSE))
+	# check for post-stratification
+	if (file.exists(gsub("_summary.tsv", "_poststrat_summary.tsv", args$fits[fit_idx]))){
+		out = calc_fit_output(out, args$labels[fit_idx], params, 
+		read_tsv(gsub("_summary.tsv", "_poststrat_summary.tsv", args$fits[fit_idx]), show_col_types=FALSE) %>% mutate(idx=NA))
+	}
+}
+
 out = calc_phsc_output(out, phsc_dat, round_digits=round_digits)
 
 # unpack
 vals = out[["vals"]]
 labels = out[["labels"]]
+
+# add amplicon stats
+amp_dat = summarise_n_d(
+	read_tsv(gsub(".tsv", "_amplicon.tsv", args$phscDat), show_col_types=FALSE))
+n_unique_n_obs_gt_0_amplicon = nrow(amp_dat %>% filter(N_obs > 0))
+n_unique_mi_obs_gt_0_amplicon = nrow(amp_dat %>% filter(MI_obs > 0))
+labels = c(labels, 'n_unique_N_obs_gt_0_amplicon')
+vals = c(vals, format(n_unique_n_obs_gt_0_amplicon, big.mark=','))
+labels = c(labels, 'n_unique_MI_obs_gt_0_amplicon')
+vals = c(vals, n_unique_mi_obs_gt_0_amplicon)
+labels = c(labels, 'p_unique_MI_obs_gt_0_amplicon')
+vals = c(vals, round(100*n_unique_mi_obs_gt_0_amplicon / n_unique_n_obs_gt_0_amplicon, 2))
+
 
 # additional empirical results
 # proportion of sequenced participants by sequencing technology and community type
@@ -708,22 +754,25 @@ vals = c(vals, round((p_fishing %>% filter(sequencing_technology == "bait_captur
 #	round_digits)
 
 # posterior n_mi with prob_mi > 50
-n_mi_cutoff_dat = read_tsv(str_replace(args$empiricalFullFit, '_summary.tsv', '_n_mi_dichotomized.tsv'), 
+#args$empiricalCutoffFit = 'fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_age_sex_comm_summary.tsv'
+print(args$empiricalCutoffFit)
+n_mi_cutoff_dat = read_tsv(str_replace(args$empiricalCutoffFit, '_summary.tsv', '_n_mi_dichotomized.tsv'), 
 	show_col_types=FALSE)
 
-labels = c(labels, 'empirical_full_fit_ind_prob_MI_ge_50_median')
+
+labels = c(labels, 'empirical_age_sex_comm_fit_ind_prob_mi_ge_50_median')
 vals = c(vals, (n_mi_cutoff_dat %>% filter(cutoff == "0.5"))$`0.50`)
-labels = c(labels, 'empirical_full_fit_ind_prob_MI_ge_50_median_percent')
+labels = c(labels, 'empirical_age_sex_comm_fit_ind_prob_mi_ge_50_median_percent')
 vals = c(vals, 
 	round(100*((n_mi_cutoff_dat %>% filter(cutoff == "0.5"))$`0.50` / 
-			length(unique((empirical_full_fit %>% filter(!is.na(study_id)))$study_id))),
+			length(unique((read_tsv(args$empiricalCutoffFit, show_col_types=FALSE) %>% filter(!is.na(study_id)))$study_id))),
 		round_digits))
 
 
 # MI participants to match posterior pred
-labels = c(labels, 'empirical_full_fit_ind_prob_MI_ge_empirical_median')
+labels = c(labels, 'empirical_age_sex_comm_fit_ind_prob_mi_ge_empirical_median')
 vals = c(vals, format((n_mi_cutoff_dat %>% filter(cutoff == "n_mi"))$`0.50`, big.mark=','))
-labels = c(labels, 'empirical_full_fit_ind_prob_MI_empirical_median_percent')
+labels = c(labels, 'empirical_age_sex_comm_fit_ind_prob_mi_empirical_median_percent')
 vals = c(vals, round(100*(n_mi_cutoff_dat %>% filter(cutoff == "empirical"))$`0.50`, round_digits))
 
 # compare risk of MI based on sexpever among those in fishing communities
@@ -734,7 +783,7 @@ sexpever_meanFishing24_29 = (metadata %>% filter(finalhiv == 'P' & sex == 'M' & 
 
 sexpever_fit = readRDS(str_replace(args$empiricalSexpeverMenFit, "_summary.tsv", ".Rds"))
 sexpever_draws = as_tibble(sexpever_fit$draws(
-		variables = c('logit_prob_MI', 'logit_prob_MI_coeffs[1]', 'logit_prob_MI_coeffs[3]'),
+		variables = c('logit_prob_mi_baseline', 'logit_prob_mi_coeffs[1]', 'logit_prob_mi_coeffs[3]', 'logit_prob_mi_coeffs[4]'),
         inc_warmup = FALSE,
         format = "draws_df")) %>%
 	select(-.chain, -.iteration, -.draw) %>%
@@ -742,15 +791,18 @@ sexpever_draws = as_tibble(sexpever_fit$draws(
 
 
 # risk of MI with 1 lifetime sexpartner
+# THIS IS WRONG
 rr_sexpever_Fishing24_29_1v30 = sexpever_draws %>%
 	mutate(rr = inv_logit(
-			logit_prob_MI + 
-				`logit_prob_MI_coeffs[1]` + 
-				`logit_prob_MI_coeffs[3]` * (30 - sexpever_meanFishing24_29)) / 
+			logit_prob_mi_baseline + 
+				`logit_prob_mi_coeffs[1]` + 
+				`logit_prob_mi_coeffs[3]` * (30 - sexpever_meanFishing24_29) +
+				`logit_prob_mi_coeffs[4]` * (30 - sexpever_meanFishing24_29)) / 
 			inv_logit(
-			logit_prob_MI + 
-				`logit_prob_MI_coeffs[1]` + 
-				`logit_prob_MI_coeffs[3]` * (1 - sexpever_meanFishing24_29))) %>%
+			logit_prob_mi_baseline + 
+				`logit_prob_mi_coeffs[1]` + 
+				`logit_prob_mi_coeffs[3]` * (1 - sexpever_meanFishing24_29) + 
+				`logit_prob_mi_coeffs[4]` * (1 - sexpever_meanFishing24_29))) %>%
 	summarise(median=median(rr), lower = get_hpd(rr)$lower, upper=get_hpd(rr)$upper)
 
 
@@ -759,7 +811,7 @@ for (col in colnames(rr_sexpever_Fishing24_29_1v30)){
 	vals = c(vals, round(rr_sexpever_Fishing24_29_1v30[[col]][1], round_digits))
 }
 
-out = tibble(labels=labels, vals=vals) #%>% arrange(labels)
+out = tibble(labels=labels, vals=vals) %>% mutate(labels = gsub("&", "\\\\\\\\&", labels))
 
 write_csv(out, 'output/statistics.csv', quote = "all")
 # need this to manually replace values in tex file for pandoc

@@ -50,7 +50,6 @@ d = d %>% rename(sg = split.ids) %>%
 	# add "subject" columns
 	mutate(subject = str_split(id, "-", simplify=T)[,1])
 	
-
 # label windows if they are unique
 # get just non-overlapping windows
 window_size=(d$window_end[1] - d$window_start[1]) + 1
@@ -68,10 +67,11 @@ d = d %>% mutate(window_type = case_when(
 	!(window_start %in% windows) & !(window_start %in% windows_alt) ~ 'overlapping'),
 	N_windows = length(windows))
 
-# filter for just the highest N_obs among unique windows
+
+# filter visits for just the highest N_obs among unique windows
 # if ties, get maximum viral load
 par_d = d %>% inner_join(
-	summarise_n_d(tabulate_n_d(d %>% filter(window_type == 'unique'))) %>% 
+	summarise_n_d(tabulate_n_d(d %>% filter(window_type == 'unique' & id_subgraph_reads > 0))) %>% 
 		select(study_id, round, N_obs, log10_copies) %>%
 		group_by(study_id) %>%
 		filter(N_obs == max(N_obs)) %>%
@@ -90,7 +90,7 @@ metadata =
 				select(id, phsc) %>% 
 				unique(), 
 			by=c('id' = 'id')) %>%
-		left_join(par_d %>% select(study_id, round) %>% unique() %>%
+		left_join(par_d %>% select(study_id, round, run) %>% unique() %>%
 			mutate(phsc_par = TRUE)) %>%
 	mutate(phsc = replace_na(phsc, FALSE),
 		phsc_par = replace_na(phsc_par, FALSE))
@@ -113,6 +113,7 @@ phsc_dates = metadata %>%
 
 metadata$min_phsc_date = phsc_dates$min_phsc_date
 metadata$max_phsc_date = phsc_dates$max_phsc_date
+
 
 write_tsv(metadata %>% select(-rccs_study_id, -visit_dt),
 	paste(c(in_split[1:3], 'metadata.tsv'), collapse='_'))

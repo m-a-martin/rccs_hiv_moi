@@ -6,6 +6,7 @@ suppressMessages(source('scripts/utils.R'))
 
 p <- arg_parser("plot summary of simulated data")
 p <- add_argument(p, "--dat", help="input data file", nargs=1)
+p = add_argument(p, "--filter", default="TRUE", help="input data filter", nargs=1)
 p <- add_argument(p, "--out", help="output figure name", nargs=1)
 p <- add_argument(p, "--colors", help="tsv file with color codes", nargs=1, default='config/colors.tsv')
 args <- parse_args(p)
@@ -15,7 +16,7 @@ args$colors_dict = setNames(cols$color, cols$var)
 
 
 dat = tabulate_n_d(read_tsv(args$dat, show_col_types = FALSE) %>% 
-	filter(window_type == 'unique')) %>%
+	filter(eval(parse(text=args$filter)))) %>%
 	mutate(vl_cat = cut(log10_copies, breaks=c(3,3.5,4,4.5,5,Inf)))
 
 

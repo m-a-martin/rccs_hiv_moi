@@ -1,224 +1,112 @@
 #!/usr/bin/env bash
 
-
-#### ------------------------------------- ####
-#### 1. FULL MODEL WITH IDENTICAL PROB. MI ####
-#### ------------------------------------- ####
+#### ------------------------------------------------------------ ####
+#### 1. EXTENDED MODEL WITH PROB. MI BASED ON AGE, SEX, COMM_TYPE ####
+#### ------------------------------------------------------------ ####
 Rscript scripts/run_stan.R \
 	--dat output/211220_allreads_phsc_all_subgraphs_format_par.tsv \
 	--inputType full \
-	--stan stan/full_model.stan \
-	--seqDesignMatrix "sequencing_technology" "sequencing_technology:log10_copies" \
-	--scaleVars "log10_copies:sequencing_technology" \
-	--designRisks "logit_prob_MI"
+	--stan stan/deep-phyloMI.stan \
+	--filter "id_subgraph_reads > 0 & window_type == 'unique'" \
+	--miDesignMatrix age_cat_coarse sex comm_type \
+	--seqDesignMatrix "sequencing_technology" "log10_copies_shared" "sequencing_technology*log10_copies" \
+	--scaleVars "log10_copies_shared" "log10_copies:sequencing_technology" \
+	--strataPrevs "comm_type == 'fishing'" "comm_type == 'inland'" \
+	--strataPrevRatios "comm_type == 'fishing':comm_type=='inland'" \
+	--outAppend age_sex_comm
 
-# need to format plot params file based on design matrix
-n_intercept=$(grep -v "\\:" fit/211220_allreads_phsc_all_subgraphs_format_par_full_model__design_cols.tsv | \
-	grep -v "col" | wc -l)
-cat \
-	config/full_empirical_plot_params_base.tsv \
-	<(echo "\n") \
-	<(awk -F'\t' '{print "logit_prob_seq_coeffs["NR"]\texpression(atop(\x27logit(seq. success):\x27, paste(\x27"$1" coeff. (\x27,alpha^\"" $1 "\", \x27)\x27)))\talpha^"$1}' \
-		<(awk -F'\t' '{if ($2=="seq") print $1}' \
-			<(grep -v "\\:" fit/211220_allreads_phsc_all_subgraphs_format_par_full_model__design_cols.tsv))) \
-	<(awk -F'\t' -v n=$n_intercept '{print "logit_prob_seq_coeffs["NR+n"]\texpression(atop(\x27logit(seq. success):\x27, paste(\x27"$1" coeff. (\x27,alpha^\"" $1 "\", \x27)\x27)))\talpha^"$1}' \
-		<(awk -F'\t' '{if ($2=="seq") print $1}' \
-			<(grep "\\:" fit/211220_allreads_phsc_all_subgraphs_format_par_full_model__design_cols.tsv))) |\
-	sed '/^$/d' | \
-	sed 's/sequencing_technology//g' |	\
-	sed 's/bait_capture/bait capture/g' | \
-	sed 's/:log10_copies/-vl/g' | \
-	sed 's/-vl coeff/ VL coeff/g' | \
-	sed 's/alpha^\"bait capture/alpha^\"bait/g' | \
-	sed 's/alpha^bait capture/alpha^bait/g' \
-	> config/tmp.tsv
-
-# sort rows
-cat \
-	<(head -n 1 config/tmp.tsv) \
-	<(tail -n +2 config/tmp.tsv | tail -n +2 config/tmp.tsv | grep "logit_prob_seq" | sort) \
-	<(grep lambda config/tmp.tsv) \
-	<(grep epsilon config/tmp.tsv) \
-	<(grep prob_MI config/tmp.tsv | grep -v epsilon | grep -v lambda) \
-	> config/full_empirical_plot_params.tsv
-rm -rf config/tmp.tsv
 
 # finally, a bit of post-hoc analyses
+# poststratification weighting
+Rscript scripts/poststratification.R \
+	--metadata output/211220_allreads_phsc_metadata.tsv \
+	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_deep-phyloMI_age_sex_comm.Rds \
+	--strataVars age_cat_coarse sex comm_type \
+	--strataPrevs "comm_type == 'fishing'" "comm_type == 'inland'" \
+	--strataPrevRatios "comm_type == 'fishing':comm_type=='inland'"
+
+# MI classification threshold
 Rscript scripts/calc_n_mi_threshold.R \
-	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_full_model_.Rds \
+	--fit fit/211220_allreads_phsc_all_subgraphs_format_par_deep-phyloMI_age_sex_comm.Rds \
 	--dat output/211220_allreads_phsc_all_subgraphs_format_par.tsv
 
 
-#### ------------------------------------------------------------ ####
-#### 2. EXTENDED MODEL WITH PROB. MI DEPENDENT ON SEQUENCING TECH ####
-#### ------------------------------------------------------------ ####
+#### ---------------------------------------------------------------------------------------- ####
+#### 2. EXTENDED MODEL WITH PROB. MI BASED ON AGE, SEX, COMM_TYPE NO FREQ. CONTAMINANT FILTER ####
+#### ---------------------------------------------------------------------------------------- ####
 Rscript scripts/run_stan.R \
 	--dat output/211220_allreads_phsc_all_subgraphs_format_par.tsv \
 	--inputType full \
-	--stan stan/extended_model.stan \
+	--filter "window_type == 'unique' & id_subgraph_reads_all > 0 & subgraph_reads_all >= 3" \
+	--stan stan/deep-phyloMI.stan \
+	--miDesignMatrix age_cat_coarse sex comm_type \
+	--seqDesignMatrix "sequencing_technology" "log10_copies_shared" "sequencing_technology*log10_copies" \
+	--scaleVars "log10_copies_shared" "log10_copies:sequencing_technology" \
+	--outAppend age_sex_comm_incl_minor
+
+
+
+#### --------------------------------------------------------------------------------- ####
+#### 3. EXTENDED MODEL WITH PROB. MI BASED ON AGE, SEX, COMM_TYPE W/ SYN. AMPLICON DAT ####
+#### --------------------------------------------------------------------------------- ####
+sed 's/target += cauchy_lpdf(logit_prob_seq_ind_sd/\/\/ target += cauchy_lpdf(logit_prob_seq_ind_sd/g' \
+	stan/deep-phyloMI.stan |
+	sed 's/real<lower = 0> logit_prob_seq_ind_sd/\/\/ real<lower = 0> logit_prob_seq_ind_sd/g' | \
+	sed 's/0, logit_prob_seq_ind_sd/0, 0.7/g' |
+	> stan/tmp.stan
+
+Rscript scripts/run_stan.R \
+	--dat output/211220_allreads_phsc_all_subgraphs_format_par_amplicon.tsv \
+	--inputType window \
+	--filter "TRUE" \
+	--stan stan/tmp.stan \
+	--miDesignMatrix age_cat_coarse sex comm_type \
+	--seqDesignMatrix "sequencing_technology" "log10_copies_shared"  "sequencing_technology*log10_copies" \
+	--scaleVars "log10_copies_shared" "log10_copies:sequencing_technology" \
+	--outAppend age_sex_comm_amplicon
+
+rm -rf stan/tmp.stan
+#### -------------------------------------------------------------- ####
+#### 4. EXTENDED MODEL WITH PROB. MI BASED ON SEQUENCING TECHNOLOGY ####
+#### ------------------------------------------------------------- ####
+Rscript scripts/run_stan.R \
+	--dat output/211220_allreads_phsc_all_subgraphs_format_par.tsv \
+	--inputType full \
+	--stan stan/deep-phyloMI.stan \
+	--filter "id_subgraph_reads > 0 & window_type == 'unique'" \
 	--miDesignMatrix sequencing_technology \
-	--seqDesignMatrix "sequencing_technology" "sequencing_technology:log10_copies" \
-	--scaleVars 'log10_copies:sequencing_technology' \
-	--designRisks "logit_prob_MI_coeffs[1]+logit_prob_MI" "logit_prob_MI" \
-	--designRiskRatios "logit_prob_MI_coeffs[1]+logit_prob_MI:logit_prob_MI" \
-	--outAppend sequencing_technology
-
-# need to format plot params file based on design matrix
-n_intercept=$(
-	awk -F'\t' '{if ($2=="seq") print $0}' fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_design_cols.tsv | \
-		grep -v "\\:"  | \
-		grep -v "col" | wc -l)
-
-cat \
-	config/extended_empirical_plot_params_base.tsv \
-	<(echo "\n") \
-	<(awk -F'\t' '{print "logit_prob_seq_coeffs["NR"]\texpression(atop(\x27logit(seq. success):\x27, paste(\x27"$1" coeff. (\x27,alpha^\"" $1 "\", \x27)\x27)))\talpha^"$1}' \
-		<(awk -F'\t' '{if ($2=="seq") print $1}' \
-			<(grep -v "\\:" fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_design_cols.tsv))) \
-	<(awk -F'\t' -v n=$n_intercept '{print "logit_prob_seq_coeffs["NR+n"]\texpression(atop(\x27logit(seq. success):\x27, paste(\x27"$1" coeff. (\x27,alpha^\"" $1 "\", \x27)\x27)))\talpha^"$1}' \
-		<(awk -F'\t' '{if ($2=="seq") print $1}' \
-			<(grep "\\:" fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_design_cols.tsv))) \
-	<(awk -F'\t' '{print "logit_prob_MI_coeffs["NR"]\t\"expression(atop(\x27logit(prob. MI):\x27, paste(\x27"$1" coeff. (\x27,beta["NR"], \x27)\x27)))\"\tbeta_"NR}' \
-		<(awk -F'\t' '{if ($2=="mi") print $1}' fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_design_cols.tsv)) |\
-	sed '/^$/d' | \
-	sed 's/sequencing_technology//g' |	\
-	sed 's/bait_capture/bait capture/g' | \
-	sed 's/:log10_copies/-vl/g' | \
-	sed 's/-vl coeff/ VL coeff/g' | \
-	sed 's/alpha^\"bait capture/alpha^\"bait/g' | \
-	sed 's/alpha^bait capture/alpha^bait/g' \
-	> config/tmp.tsv
-
-# sort rows
-cat \
-	<(head -n 1 config/tmp.tsv) \
-	<(tail -n +2 config/tmp.tsv | tail -n +2 config/tmp.tsv | grep "logit_prob_seq" | sort) \
-	<(grep lambda config/tmp.tsv) \
-	<(grep epsilon config/tmp.tsv) \
-	<(grep prob_MI config/tmp.tsv | grep -v epsilon | grep -v lambda) \
-	> config/seqtech_empirical_plot_params.tsv
-rm -rf config/tmp.tsv
+	--seqDesignMatrix "sequencing_technology" "log10_copies_shared"  "sequencing_technology*log10_copies" \
+	--scaleVars '"log10_copies_shared" log10_copies:sequencing_technology' \
+	--multivariateRiskRatios "sequencing_technology=='bait_capture':sequencing_technology=='amplicon'" \
+	--outAppend seq
 
 
-#### ------------------------------------------------------------------------ ####
-#### 3. EXTENDED MODEL WITH PROB. MI DEPENDENT ON COMM_TYPE & SEQUENCING_TECH ####
-#### ------------------------------------------------------------------------ ####
+#### ---------------------------------------------------------------------------- ####
+#### 5. EXTENDED MODEL WITH PROB. MI BASED ON COMM_TYPE AND SEQUENCING_TECHNOLOGY ####
+#### ---------------------------------------------------------------------------- ####
 Rscript scripts/run_stan.R \
 	--dat output/211220_allreads_phsc_all_subgraphs_format_par.tsv \
 	--inputType full \
-	--stan stan/extended_model.stan \
+	--stan stan/deep-phyloMI.stan \
+	--filter "id_subgraph_reads > 0 & window_type == 'unique'" \
 	--miDesignMatrix comm_type sequencing_technology \
-	--seqDesignMatrix "sequencing_technology" "sequencing_technology:log10_copies" \
-	--scaleVars 'log10_copies:sequencing_technology' \
-	--populationRiskRatios "sequencing_technology='bait_capture':sequencing_technology='amplicon'" \
-	--outAppend sequencing_technology_comm_type
+	--seqDesignMatrix "sequencing_technology" "log10_copies_shared"  "sequencing_technology*log10_copies" \
+	--scaleVars "log10_copies_shared" 'log10_copies:sequencing_technology' \
+	--multivariateRiskRatios "sequencing_technology=='bait_capture':sequencing_technology=='amplicon'" \
+	--outAppend comm_seq
 
-
-# need to format plot params file based on design matrix
-n_intercept=$(
-	awk -F'\t' '{if ($2=="seq") print $0}' fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_comm_type_design_cols.tsv | \
-		grep -v "\\:"  | \
-		grep -v "col" | wc -l)
-
-cat \
-	config/extended_empirical_plot_params_base.tsv \
-	<(echo "\n") \
-	<(awk -F'\t' '{print "logit_prob_seq_coeffs["NR"]\texpression(atop(\x27logit(seq. success):\x27, paste(\x27"$1" coeff. (\x27,alpha^\"" $1 "\", \x27)\x27)))\talpha^"$1}' \
-		<(awk -F'\t' '{if ($2=="seq") print $1}' \
-			<(grep -v "\\:" fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_comm_type_design_cols.tsv))) \
-	<(awk -F'\t' -v n=$n_intercept '{print "logit_prob_seq_coeffs["NR+n"]\texpression(atop(\x27logit(seq. success):\x27, paste(\x27"$1" coeff. (\x27,alpha^\"" $1 "\", \x27)\x27)))\talpha^"$1}' \
-		<(awk -F'\t' '{if ($2=="seq") print $1}' \
-			<(grep "\\:" fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_comm_type_design_cols.tsv))) \
-	<(awk -F'\t' '{print "logit_prob_MI_coeffs["NR"]\t\"expression(atop(\x27logit(prob. MI):\x27, paste(\x27"$1" coeff. (\x27,beta["NR"], \x27)\x27)))\"\tbeta_"NR}' \
-		<(awk -F'\t' '{if ($2=="mi") print $1}' fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_sequencing_technology_comm_type_design_cols.tsv)) |\
-	sed '/^$/d' | \
-	sed 's/sequencing_technology//g' |	\
-	sed 's/bait_capture/bait capture/g' | \
-	sed 's/:log10_copies/-vl/g' | \
-	sed 's/-vl coeff/ VL coeff/g' | \
-	sed 's/alpha^\"bait capture/alpha^\"bait/g' | \
-	sed 's/alpha^bait capture/alpha^bait/g' | \
-	sed 's/comm_type//g' \
-	> config/tmp.tsv
-
-# sort rows
-cat \
-	<(head -n 1 config/tmp.tsv) \
-	<(tail -n +2 config/tmp.tsv | tail -n +2 config/tmp.tsv | grep "logit_prob_seq" | sort) \
-	<(grep lambda config/tmp.tsv) \
-	<(grep epsilon config/tmp.tsv) \
-	<(grep prob_MI config/tmp.tsv | grep -v epsilon | grep -v lambda) \
-	> config/sequencing_technology_comm_type_empirical_plot_params.tsv
-rm -rf config/tmp.tsv
-
-
-#### ------------------------------------------------------ ####
-#### 4. EXTENDED MODEL WITH PROB. MI DEPENDENT ON COMM_TYPE ####
-#### ------------------------------------------------------ ####
-Rscript scripts/run_stan.R \
-	--dat output/211220_allreads_phsc_all_subgraphs_format_par.tsv \
-	--inputType full \
-	--stan stan/extended_model.stan \
-	--miDesignMatrix comm_type \
-	--seqDesignMatrix "sequencing_technology" "sequencing_technology:log10_copies" \
-	--scaleVars 'log10_copies:sequencing_technology' \
-	--designRisks \
-		"logit_prob_MI_coeffs[1]+logit_prob_MI" \
-		"logit_prob_MI" \
-	--designRiskRatios \
-		"logit_prob_MI_coeffs[1]+logit_prob_MI:logit_prob_MI" \
-	--outAppend comm_type
-
-
-# need to format plot params file based on design matrix
-n_intercept=$(
-	awk -F'\t' '{if ($2=="seq") print $0}' fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_comm_type_design_cols.tsv | \
-		grep -v "\\:"  | \
-		grep -v "col" | wc -l)
-
-cat \
-	config/extended_empirical_plot_params_base.tsv \
-	<(echo "\n") \
-	<(awk -F'\t' '{print "logit_prob_seq_coeffs["NR"]\texpression(atop(\x27logit(seq. success):\x27, paste(\x27"$1" coeff. (\x27,alpha^\"" $1 "\", \x27)\x27)))\talpha^"$1}' \
-		<(awk -F'\t' '{if ($2=="seq") print $1}' \
-			<(grep -v "\\:" fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_comm_type_design_cols.tsv))) \
-	<(awk -F'\t' -v n=$n_intercept '{print "logit_prob_seq_coeffs["NR+n"]\texpression(atop(\x27logit(seq. success):\x27, paste(\x27"$1" coeff. (\x27,alpha^\"" $1 "\", \x27)\x27)))\talpha^"$1}' \
-		<(awk -F'\t' '{if ($2=="seq") print $1}' \
-			<(grep "\\:" fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_comm_type_design_cols.tsv))) \
-	<(awk -F'\t' '{print "logit_prob_MI_coeffs["NR"]\t\"expression(atop(\x27logit(prob. MI):\x27, paste(\x27"$1" coeff. (\x27,beta["NR"], \x27)\x27)))\"\tbeta_"NR}' \
-		<(awk -F'\t' '{if ($2=="mi") print $1}' fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_comm_type_design_cols.tsv)) |\
-	sed '/^$/d' | \
-	sed 's/sequencing_technology//g' |	\
-	sed 's/bait_capture/bait capture/g' | \
-	sed 's/:log10_copies/-vl/g' | \
-	sed 's/-vl coeff/ VL coeff/g' | \
-	sed 's/alpha^\"bait capture/alpha^\"bait/g' | \
-	sed 's/alpha^bait capture/alpha^bait/g' | \
-	sed 's/comm_type//g' \
-	> config/tmp.tsv
-
-# sort rows
-cat \
-	<(head -n 1 config/tmp.tsv) \
-	<(tail -n +2 config/tmp.tsv | tail -n +2 config/tmp.tsv | grep "logit_prob_seq" | sort) \
-	<(grep lambda config/tmp.tsv) \
-	<(grep epsilon config/tmp.tsv) \
-	<(grep prob_MI config/tmp.tsv | grep -v epsilon | grep -v lambda) \
-	> config/commtype_empirical_plot_params.tsv
-rm -rf config/tmp.tsv
-
-
-#### ----------------------------------------------------------------------------------- ####
-#### 5. EXTENDED MODEL WITH PROB. MI DEPENDENT ON COMM_TYPE, SEXPEVER, & SEQUENCING_TECH ####
-#### ----------------------------------------------------------------------------------- ####
+#### ----------------------------------------------------------------- ####
+#### 6. EXTENDED MODEL WITH PROB. MI DEPENDENT ON COMM_TYPE & SEXPEVER ####
+#### ----------------------------------------------------------------- ####
 # ONLY PERFORM THIS ANALYSIS AMONG MEN
 Rscript scripts/run_stan.R \
 	--dat output/211220_allreads_phsc_all_subgraphs_format_par_m.tsv \
 	--inputType full \
-	--stan stan/extended_model.stan \
-	--seqDesignMatrix "sequencing_technology" "sequencing_technology:log10_copies" \
-	--miDesignMatrix "comm_type" "comm_type:plhiv_sexpever_std" \
-	--scaleVars 'log10_copies:sequencing_technology' \
+	--stan stan/deep-phyloMI.stan \
+	--filter "id_subgraph_reads > 0 & window_type == 'unique'" \
+	--seqDesignMatrix "sequencing_technology" "log10_copies_shared"  "sequencing_technology*log10_copies" \
+	--miDesignMatrix "comm_type" "plhiv_sexpever_std" "comm_type*plhiv_sexpever_std" \
+	--scaleVars "log10_copies_shared" 'log10_copies:sequencing_technology' \
 	--miMissingDat \
 		'plhiv_sexpever_std:93;3;60;plhiv_sexpeverMany_shape;plhiv_sexpeverMany_scale;plhiv_sexpever_mean' \
 		'plhiv_sexpever_std:100;1;60;plhiv_sexpeverMissing_shape;plhiv_sexpeverMissing_scale;plhiv_sexpever_mean' \
@@ -227,110 +115,69 @@ Rscript scripts/run_stan.R \
 Rscript scripts/run_stan.R \
 	--dat output/211220_allreads_phsc_all_subgraphs_format_par_m_complete.tsv \
 	--inputType full \
-	--stan stan/extended_model.stan \
-	--seqDesignMatrix "sequencing_technology" "sequencing_technology:log10_copies" \
-	--miDesignMatrix "comm_type" "comm_type:plhiv_sexpever_std" \
-	--scaleVars 'log10_copies:sequencing_technology' \
+	--stan stan/deep-phyloMI.stan \
+	--filter "id_subgraph_reads > 0 & window_type == 'unique'" \
+	--seqDesignMatrix "sequencing_technology" "log10_copies_shared"  "sequencing_technology*log10_copies" \
+	--miDesignMatrix "comm_type" "plhiv_sexpever_std" "comm_type*plhiv_sexpever_std" \
+	--scaleVars "log10_copies_shared" 'log10_copies:sequencing_technology' \
 	--outAppend sexpever_men_complete
-
-# need to format plot params file based on design matrix
-n_intercept=$(
-	awk -F'\t' '{if ($2=="seq") print $0}' fit/211220_allreads_phsc_all_subgraphs_format_par_m_extended_model_sexpever_men_design_cols.tsv | \
-		grep -v "\\:"  | \
-		grep -v "col" | wc -l)
-
-cat \
-	config/extended_empirical_plot_params_base.tsv \
-	<(echo "\n") \
-	<(awk -F'\t' '{print "logit_prob_seq_coeffs["NR"]\texpression(atop(\x27logit(seq. success):\x27, paste(\x27"$1" coeff. (\x27,alpha^\"" $1 "\", \x27)\x27)))\talpha^"$1}' \
-		<(awk -F'\t' '{if ($2=="seq") print $1}' \
-			<(grep -v "\\:" fit/211220_allreads_phsc_all_subgraphs_format_par_m_extended_model_sexpever_men_design_cols.tsv))) \
-	<(awk -F'\t' -v n=$n_intercept '{print "logit_prob_seq_coeffs["NR+n"]\texpression(atop(\x27logit(seq. success):\x27, paste(\x27"$1" coeff. (\x27,alpha^\"" $1 "\", \x27)\x27)))\talpha^"$1}' \
-		<(awk -F'\t' '{if ($2=="seq") print $1}' \
-			<(grep "\\:" fit/211220_allreads_phsc_all_subgraphs_format_par_m_extended_model_sexpever_men_design_cols.tsv))) \
-	<(awk -F'\t' '{print "logit_prob_MI_coeffs["NR"]\t\"expression(atop(\x27logit(prob. MI):\x27, paste(\x27"$1" coeff. (\x27,beta["NR"], \x27)\x27)))\"\tbeta_"NR}' \
-		<(awk -F'\t' '{if ($2=="mi") print $1}' fit/211220_allreads_phsc_all_subgraphs_format_par_m_extended_model_sexpever_men_design_cols.tsv)) |\
-	sed '/^$/d' | \
-	sed 's/sequencing_technology//g' |	\
-	sed 's/bait_capture/bait capture/g' | \
-	sed 's/:log10_copies/-vl/g' | \
-	sed 's/-vl coeff/ VL coeff/g' | \
-	sed 's/alpha^\"bait capture/alpha^\"bait/g' | \
-	sed 's/alpha^bait capture/alpha^bait/g' | \
-	sed 's/sexM/men/g' | \
-	sed 's/comm_type//g' | \
-	sed 's/plhiv_sexpever_std/sexpever/g' \
-	> config/tmp.tsv
-
-# sort rows
-cat \
-	<(head -n 1 config/tmp.tsv) \
-	<(tail -n +2 config/tmp.tsv | tail -n +2 config/tmp.tsv | grep "logit_prob_seq" | sort) \
-	<(grep lambda config/tmp.tsv) \
-	<(grep epsilon config/tmp.tsv) \
-	<(grep prob_MI config/tmp.tsv | grep -v epsilon | grep -v lambda) \
-	> config/sexpever_men_empirical_plot_params.tsv
-rm -rf config/tmp.tsv
 
 
 #### ----------------------------------------- ####
-#### 6. EXTENDED MODEL WITH VARIABLE SELECTION ####
+#### 7. EXTENDED MODEL WITH VARIABLE SELECTION ####
 #### ----------------------------------------- ####
 Rscript scripts/run_stan.R \
 	--dat output/211220_allreads_phsc_all_subgraphs_format_par.tsv \
 	--inputType full \
-	--stan stan/extended_model_hsp.stan \
-	--miDesignMatrix "round" "male_circumcision" "comm_type" "sequencing_technology" "comm_type:sex" "comm_type:married" "comm_type:age_cat_coarse" \
-		"comm_type:in_migrant" "comm_type:barworker" \
-	--seqDesignMatrix "sequencing_technology" "sequencing_technology:log10_copies" \
-	--scaleVars 'log10_copies:sequencing_technology' \
-	--populationRiskRatios "comm_type='fishing':comm_type='inland'" \
+	--stan stan/deep-phyloMI.stan \
+	--miCoeffPriors shrinkage \
+	--filter "id_subgraph_reads > 0 & window_type == 'unique'" \
+	--miDesignMatrix \
+		"sequencing_technology" \
+		"round" \
+		"male_circumcision" \
+		"comm_type" \
+		"sex" \
+		"age_cat_coarse" \
+		"in_migrant" \
+		"barworker" \
+		"sex*comm_type"  \
+		"age_cat_coarse*comm_type" \
+		"in_migrant*comm_type" \
+		"barworker*comm_type" \
+	--seqDesignMatrix "sequencing_technology" "log10_copies_shared"  "sequencing_technology*log10_copies" \
+	--scaleVars "log10_copies_shared" "log10_copies:sequencing_technology" \
+	--strataPrevRatios "comm_type=='inland'&in_migrant==TRUE:comm_type=='inland'&in_migrant==FALSE"  "comm_type=='fishing'&sex=='M':comm_type=='fishing'&sex=='F'" \
+	--multivariateRiskRatios "comm_type=='fishing':comm_type=='inland'" "comm_type=='inland'&in_migrant==TRUE:comm_type=='inland'&in_migrant==FALSE"\
 	--outAppend var_select
 
 
-# need to format plot params file based on design matrix
-n_intercept=$(
-	awk -F'\t' '{if ($2=="seq") print $0}' fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_hsp_var_select_design_cols.tsv | \
-		grep -v "\\:"  | \
-		grep -v "col" | wc -l)
+#### -------------------------------- ####
+#### 8. FORMAT PARAMETER CONFIG FILES ####
+#### -------------------------------- ####
+# AGE SEX COMM
+bash scripts/format_params.sh \
+	config/empirical_extended_plot_params_base.tsv \
+	age_sex_comm
 
-cat \
-	config/extended_empirical_plot_params_base.tsv \
-	<(echo "\n") \
-	<(awk -F'\t' '{print "logit_prob_seq_coeffs["NR"]\texpression(atop(\x27logit(seq. success):\x27, paste(\x27"$1" coeff. (\x27,alpha^\"" $1 "\", \x27)\x27)))\talpha^"$1}' \
-		<(awk -F'\t' '{if ($2=="seq") print $1}' \
-			<(grep -v "\\:" fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_hsp_var_select_design_cols.tsv))) \
-	<(awk -F'\t' -v n=$n_intercept '{print "logit_prob_seq_coeffs["NR+n"]\texpression(atop(\x27logit(seq. success):\x27, paste(\x27"$1" coeff. (\x27,alpha^\"" $1 "\", \x27)\x27)))\talpha^"$1}' \
-		<(awk -F'\t' '{if ($2=="seq") print $1}' \
-			<(grep "\\:" fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_hsp_var_select_design_cols.tsv))) \
-	<(awk -F'\t' '{print "w["NR"]\t\"expression(atop(\x27logit(prob. MI):\x27, paste(\x27"$1" coeff. (\x27,beta["NR"], \x27)\x27)))\"\tbeta_"NR}' \
-		<(awk -F'\t' '{if ($2=="mi") print $1}' fit/211220_allreads_phsc_all_subgraphs_format_par_extended_model_hsp_var_select_design_cols.tsv)) |\
-	sed '/^$/d' | \
-	sed 's/sequencing_technology//g' |	\
-	sed 's/bait_capture/bait capture/g' | \
-	sed 's/:log10_copies/-vl/g' | \
-	sed 's/-vl coeff/ VL coeff/g' | \
-	sed 's/alpha^\"bait capture/alpha^\"bait/g' | \
-	sed 's/alpha^bait capture/alpha^bait/g' | \
-	sed 's/alpha^bait capture/alpha^bait/g' | \
-	sed 's/plhiv_//g' | \
-	sed 's/_std//g' | \
-	sed 's/TRUE//g' | \
-	sed 's/sexM/men/g' | \
-	sed 's/_cat_coarse/ /g' | \
-	sed 's/male_/male /g' | \
-	sed 's/comm_type//g' \
- 	> config/tmp.tsv
+# SEQ
+bash scripts/format_params.sh \
+	config/empirical_extended_plot_params_base.tsv \
+	seq
 
-# sort rows
-cat \
-	<(head -n 1 config/tmp.tsv) \
-	<(tail -n +2 config/tmp.tsv | tail -n +2 config/tmp.tsv | grep "logit_prob_seq" | sort) \
-	<(grep lambda config/tmp.tsv) \
-	<(grep epsilon config/tmp.tsv) \
-	<(grep prob_MI config/tmp.tsv | grep -v epsilon | grep -v lambda) \
-	<(grep "w\\[" config/tmp.tsv) \
-	> config/var_select_empirical_plot_params.tsv
-rm -rf config/tmp.tsv
+# COMM SEQ
+bash scripts/format_params.sh \
+	config/empirical_extended_plot_params_base.tsv \
+	comm_seq
 
+# SEXPEVER MEN
+bash scripts/format_params.sh \
+	config/empirical_extended_plot_params_base.tsv \
+	sexpever_men \
+	m_
+
+# VAR SELECT
+bash scripts/format_params.sh \
+	config/empirical_extended_plot_params_base.tsv \
+	var_select
 

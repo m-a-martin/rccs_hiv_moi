@@ -52,12 +52,23 @@ for g in $k ${k%".tex"}_figs.tex; do
 	mv $o ${o/_vals/}
 done
 # clean up
-for g in $k ${k%".tex"}_figs.tex; do
-	rm $g
-done
+#for g in $k ${k%".tex"}_figs.tex; do
+#	rm $g
+#done
 
-
+echo "done here"
 lualatex $i
 bibtex ${i%".tex"}
 lualatex $i
 lualatex $i
+
+echo "done all"
+
+#latexdiff previous_versions/2024-10-23/rccs_hiv_multiple_infections_vals.tex rccs_hiv_multiple_infections_vals.tex \
+#	> compare_2024-10-23_2025-01-30.tex
+
+#lualatex compare_2024-10-23_2025-01-30.tex
+#bibtex compare_2024-10-23_2025-01-30
+#lualatex compare_2024-10-23_2025-01-30.tex
+#lualatex compare_2024-10-23_2025-01-30.tex
+#mv compare_2024-10-23_2025-01-30* previous_versions/compare_2024-10-23_2025-01-30/.

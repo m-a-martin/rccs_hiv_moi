@@ -31,25 +31,27 @@ fit = readRDS(args$fit)
 
 params = read_tsv(args$params, show_col_types=FALSE) %>%
 	filter(arg != 'out')
+	
 params_dict = setNames(as.numeric(params$value), params$arg)
 
 p1 = plot_n_d_scatter(dat, args$colors_dict, grouping="truth")
 p2 = plot_ind_posterior_pred(dat, fit, args$colors_dict, grouping="truth")
 
+
 plot_list = list()
 for (idx in seq(1,nrow(plot_params))){
 	param = plot_params$param[idx]
 	p_dat = as_tibble(fit$draws(
-			variables = c(param),
+			variables = if_else(param == "prob_mi_baseline", "prob_mi[1]", param),
 			  inc_warmup = FALSE,
 			  format = "draws_df")) %>%
-		select(all_of(param))
+		select(all_of(if_else(param == "prob_mi_baseline", "prob_mi[1]", param)))
 	# get HPD bounds
 	bounds95 = hdi(p_dat, credMass=0.95)[,1]
 	bounds50 = hdi(p_dat, credMass=0.50)[,1]
 	bounds = c(-Inf, bounds95[1], bounds50[1], bounds50[2], bounds95[2], Inf)
 	true_val = params_dict[param]
-	if (param == "prob_MI_baseline"){
+	if (param == "prob_mi_baseline"){
 		print(param)
 		plot_list[[param]] = plot_shadded_hist(p_dat, bounds, approx_bins=50,
 			cols=c(unname(args$colors_dict["mi_hpd3"]), 

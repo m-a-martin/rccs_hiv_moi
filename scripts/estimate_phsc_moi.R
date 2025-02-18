@@ -57,8 +57,11 @@ print(in_args)
 
 all_subgraphs = tibble(
   split.ids = character(),
+  subgraph_reads_all = numeric(),
+  subgraph_freq_all = numeric(),
   id = character(),
   id_subgraph_reads = numeric(),
+  id_subgraph_reads_all = numeric(),
 	window_start = numeric(),
 	window_end = numeric(),
 	run = character(),
@@ -101,21 +104,34 @@ for (i in 2:length(in_args)){
 					mutate(run = run)) %>%
 				unique()
 		}
+		phyloscanner.trees[[window]]$duals.info %>% select(split.ids, reads.in.subtree) %>% unique()
 		window_subgraphs = phyloscanner.trees[[window]]$duals.info %>% 
 			left_join(phyloscanner.trees[[window]]$bl.report, by=c('tip.name'='tip')) %>%
-			filter(kept & !grepl("^CNTRL", tip.name)) 
+			filter(!grepl("^CNTRL", tip.name)) 
 		if (nrow(window_subgraphs) > 0){
 			window_subgraphs = window_subgraphs %>%
 				mutate(
 					id = str_split(tip.name, "_", simplify=T)[,1],
+					subject = str_split(id, "-", simplify=T)[,1],
 					tip_reads = as.numeric(str_split(tip.name, "_", simplify=T)[,5])) %>%
-				# duals.info tibble does not account for contamination filter
-				# so need to remerge with tips to get those tips that have been labelled as contaminants
-				group_by(split.ids, id) %>% 
-				summarise(id_subgraph_reads = sum(tip_reads), .groups='drop')
+				# summarises number of reads per-subgraph per-participant-visit (filtered and unfiltered)
+				group_by(subject, split.ids, id, reads.in.subtree) %>% 
+				summarise(
+					id_subgraph_reads = sum(tip_reads*kept), 
+					id_subgraph_reads_all = sum(tip_reads), .groups='drop') %>%
+				rename(subgraph_reads_all = reads.in.subtree)
+			# summarises number of reads per-participant and per-subgraph (unfiltered only)
+			window_subgraphs = window_subgraphs %>% left_join(
+				window_subgraphs %>% select(subject, split.ids, subgraph_reads_all) %>% unique() %>% 
+					group_by(subject) %>%
+					mutate(subgraph_freq_all = subgraph_reads_all/sum(subgraph_reads_all)),
+					by=c('subject', 'split.ids', 'subgraph_reads_all'))
 			# get cophenetic distance between MRCA of two largeset subgraphs in each sample
 			duals = window_subgraphs %>% 
-				group_by(id) %>% filter(n() > 1) %>%
+				select(-id_subgraph_reads_all, -subgraph_reads_all) %>%
+				filter(id_subgraph_reads > 0) %>%
+				group_by(id) %>% 
+				filter(n() > 1) %>%
 				ungroup() %>%
 				arrange(-id_subgraph_reads) %>% 
 				group_by(id) %>% 
@@ -138,7 +154,7 @@ for (i in 2:length(in_args)){
 					unique()
 			# next get minimum distances for each subgraph to all other subgraphs in the tree
 			# treat each subgraph as both a descendant and a parent
-			# then merge withi splits and get minimum for each split
+			# then merge within splits and get minimum for each split
 			min_split_dists = bind_rows(
 				phyloscanner.trees[[window]]$classification$collapsed %>% 
 					select(unique.split, length) %>%

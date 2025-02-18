@@ -58,15 +58,15 @@ priors = function(x){
 		out = c(median(sim_vals), 
 			unname(c(hdi(sim_vals, credMass=0.95))),
 			unname(c(hdi(sim_vals, credMass=0.50))))
-	}else if (x == "logit_prob_MI"){
+	}else if (x == "logit_prob_mi_baseline"){
 		distr=function(x){qnorm(x,0,3.16)}
 		# symmetric and unimodal so HPD = percentiles
 		out = distr(c(0.5, 0.025, 0.975, 0.25, 0.75))
-	}else if (x == "logit_prob_MI_fnr" | x == "logit_prob_MI_fpr" | x == "logit_prob_MI_coeffs"){
+	}else if (x == "logit_prob_mi_fnr" | x == "logit_prob_mi_fpr" | x == "logit_prob_mi_coeffs"){
 		distr=function(x){qnorm(x,0,1)}
 		# symmetric and unimodal so HPD = percentiles
 		out = distr(c(0.5, 0.025, 0.975, 0.25, 0.75))
-	}else if (x == "prob_MI_fnr" | x == "prob_MI_fpr"){
+	}else if (x == "prob_mi_fnr" | x == "prob_mi_fpr"){
 		sim_logit_vals = rnorm(100000,0,1)
 		sim_vals = inv_logit(sim_logit_vals)
 		out = c(median(sim_vals), 

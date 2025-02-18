@@ -6,6 +6,8 @@ suppressMessages(source('scripts/utils.R'))
 
 p <- arg_parser("plot summary of simulated data")
 p <- add_argument(p, "--dat", help="input data file", nargs=1)
+p = add_argument(p, "--filter", default="TRUE", 
+  help="input data filter", nargs=1)
 p = add_argument(p, "--getWindowType1", help="which set of x axis windows to get", default='all', type="character", nargs=1)
 p = add_argument(p, "--getWindowType2", help="which set of y axis windows to get", default='unique', type="character", nargs=1)
 p <- add_argument(p, "--axesLabels", help="how to label axes", default=c("all", "non-overlapping"), type="character", nargs=2)
@@ -24,17 +26,17 @@ args$colors_dict = setNames(cols$color, cols$var)
 
 #args$dat = 'output/211220_allreads_phsc_all_subgraphs_format_bc.tsv'
 if (args$getWindowType1 == "all"){
-	x_n_d = summarise_n_d(tabulate_n_d(read_tsv(args$dat, show_col_types = FALSE))) %>%
+	x_n_d = summarise_n_d(tabulate_n_d(read_tsv(args$dat, show_col_types = FALSE) %>% filter(eval(parse(text=args$filter))))) %>%
 		select(id, N_obs, MI_obs) %>%
 		rename(c('N_obs_x' = 'N_obs', 'MI_obs_x' = 'MI_obs'))
 }else{
-	x_n_d = summarise_n_d(tabulate_n_d(read_tsv(args$dat, show_col_types = FALSE) %>% 
+	x_n_d = summarise_n_d(tabulate_n_d(read_tsv(args$dat, show_col_types = FALSE) %>% filter(eval(parse(text=args$filter))) %>% 
 			filter(window_type == args$getWindowType1))) %>%
 		select(id, N_obs, MI_obs) %>%
 		rename(c('N_obs_x' = 'N_obs', 'MI_obs_x' = 'MI_obs'))
 }
 
-y_n_d = summarise_n_d(tabulate_n_d(read_tsv(args$dat, show_col_types = FALSE) %>% 
+y_n_d = summarise_n_d(tabulate_n_d(read_tsv(args$dat, show_col_types = FALSE) %>% filter(eval(parse(text=args$filter))) %>% 
 		filter(window_type == args$getWindowType2)))  %>%
 	select(id, N_obs, MI_obs)  %>%
 	rename(c('N_obs_y' = 'N_obs', 'MI_obs_y' = 'MI_obs'))

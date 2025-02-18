@@ -157,6 +157,7 @@ plot_cophenetic_dist = function(x, colors_dict){
 
 p <- arg_parser("plot summary of empirical data")
 p <- add_argument(p, "--dat", help="input data file", nargs=1)
+p = add_argument(p, "--filter", default="TRUE", help="input data filter", nargs=1)
 p <- add_argument(p, "--out", help="output figure name", nargs=1)
 p <- add_argument(p, "--repTree1", help="representative tree data 1", nargs=1)
 p <- add_argument(p, "--repTree2", help="representative tree data 2", nargs=1)
@@ -171,7 +172,7 @@ cols = read_tsv(args$colors, show_col_types=FALSE)
 args$colors_dict = setNames(cols$color, cols$var)
 
 dat = read_tsv(args$dat, show_col_types = FALSE) %>% 
-	filter(window_type == 'unique')
+	filter(eval(parse(text=args$filter)))
 
 tab_dat = tabulate_n_d(dat)
 sum_dat = summarise_n_d(tab_dat)

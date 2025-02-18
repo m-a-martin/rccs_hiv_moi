@@ -7,85 +7,82 @@ suppressMessages(source('scripts/utils.R'))
 
 
 plot_comm_type_sexpever = function(draws, dm, dat, colors_dict, plot_age_cat = '(24,29]'){
-	# read in standardization values for each community
-	age_cat_std = dat %>% filter(finalhiv == 'P' & sex == 'M' & age_cat_fine == plot_age_cat) %>%
-		select(comm_type, plhiv_sexpever_mean) %>%
-		unique()
-	# plotting range
-	sexpever = seq(1,30,0.5)
-	# standardardized sexpever across plotting range by community type
-	sexpever_std = list(
-		inland = sexpever - 
-			(age_cat_std %>% filter(comm_type == 'inland'))$plhiv_sexpever_mean,
-		fishing = sexpever - 
-			(age_cat_std %>% filter(comm_type == 'fishing'))$plhiv_sexpever_mean)
-	# generate tibble with draws for each standardized sexpever value
-	# assumes inland as reference
-	prob_mi = 
-		bind_rows(
-			bind_rows(
-				tibble(cit = rep(seq(1,nrow(draws)), each=length(sexpever)), 
-					comm_type = rep('inland', nrow(draws) * length(sexpever)),
-					logit_prob_mi = rep(draws[['logit_prob_MI']], each=length(sexpever)),
-					logit_prob_mi_comm = 0,
-					logit_prob_mi_sexpever = rep(
-						draws[[paste(c('logit_prob_MI_coeffs[', 
-							which(dm$col == 'comm_typeinland:plhiv_sexpever_std'),
-							']'), collapse='')]],
-						each=length(sexpever)),
-					sexpever = rep(sexpever, nrow(draws)),
-					sexpever_std = rep(sexpever_std$inland, nrow(draws))),
-				tibble(cit = rep(seq(1,nrow(draws)), each=length(sexpever)), 
-						comm_type = rep('fishing', nrow(draws) * length(sexpever)),
-						logit_prob_mi = rep(draws[['logit_prob_MI']], each=length(sexpever)),
-						logit_prob_mi_comm = rep(
-							draws[[paste(c('logit_prob_MI_coeffs[', 
-								which(dm$col == 'comm_typefishing'),
-								']'), collapse='')]],
-							each=length(sexpever)),
-						logit_prob_mi_sexpever = rep(
-							draws[[paste(c('logit_prob_MI_coeffs[', 
-								which(dm$col == 'comm_typefishing:plhiv_sexpever_std'),
-								']'), collapse='')]],
-							each=length(sexpever)),
-						sexpever = rep(sexpever, nrow(draws)),
-						sexpever_std = rep(sexpever_std$fishing, nrow(draws)))) %>%
-				mutate(prob_mi = inv_logit(logit_prob_mi + logit_prob_mi_comm + logit_prob_mi_sexpever*sexpever_std)) %>%
-				group_by(comm_type, sexpever) %>%
-				group_map(~cbind(.y, 
-					tibble(median = median(.x$prob_mi)),
-					get_hpd(.x$prob_mi) %>%
-						rename(
-							'lower95' = lower,
-							'upper95' = upper),
-					get_hpd(.x$prob_mi, credMass=0.5) %>%
-						rename(
-							'lower50' = lower,
-							'upper50' = upper))))
-	# finally, we can plot
-	age_cat_split = str_split(gsub('\\(', '', gsub('\\]', '', plot_age_cat)), ',', simplify=TRUE)
-	title = paste(c('men, ', as.numeric(age_cat_split[1])+1, ' to ', age_cat_split[2], ' years old'), collapse='')
-	p = ggplot(prob_mi, aes(x=sexpever, y=median*100, ymin=lower95*100, ymax=upper95*100, color=comm_type, fill=comm_type)) + 
-		geom_ribbon(alpha=0.25, linewidth=0.25) +
-		geom_ribbon(aes(ymin=lower50*100, ymax=upper50*100), alpha=0.75, linewidth=0.25) +
-		geom_line() +
-		xlab('lifetime sex partners') +
-		ylim(0, ceiling(max(prob_mi$upper95)*100+1)) + 
-		ylab(expression(atop('predicted prevalence of', paste('multiple infections (', bar(delta), ', %)')))) +
-		scale_fill_manual(values=colors_dict, guide=NULL) +
-		scale_color_manual(values=
-			c(
-				inland = 
-					colors_dict[['inland_dark']],
-				fishing = 
-					colors_dict[['fishing_dark']]),
-			guide=NULL) +
-		gtheme +
-		theme(axis.title=element_text(size=14)) +
-		ggtitle(title)
+    # read in standardization values for each community
+    age_cat_std = dat %>% filter(finalhiv == 'P' & sex == 'M' & age_cat_fine == plot_age_cat) %>%
+        select(comm_type, plhiv_sexpever_mean) %>%
+        unique()
+    # plotting range
+    sexpever = seq(1,30,0.5)
+    # standardardized sexpever across plotting range by community type
+    sexpever_std = list(
+        inland = sexpever - 
+            (age_cat_std %>% filter(comm_type == 'inland'))$plhiv_sexpever_mean,
+        fishing = sexpever - 
+            (age_cat_std %>% filter(comm_type == 'fishing'))$plhiv_sexpever_mean)
+    # generate simulated design matrices
+    # first two columns are for plotting not for DM
+    sim_dm = tibble(
+            comm_type = c(
+                rep('fishing', length(sexpever_std$fishing)),
+                rep('inland', length(sexpever_std$inland))),
+            sexpever = c(sexpever, sexpever),
+            intercept = 1,
+            comm_typefishing = 
+                c(rep(1, length(sexpever_std$fishing)),
+                    rep(0, length(sexpever_std$inland))),
+            comm_typeinland = 
+                c(rep(0, length(sexpever_std$fishing)),
+                    rep(1, length(sexpever_std$inland))),
+            plhiv_sexpever_std = c(sexpever_std$fishing, sexpever_std$inland)) %>%
+        mutate(
+            `comm_typefishing*plhiv_sexpever_std` = comm_typefishing*plhiv_sexpever_std,
+            `comm_typeinland*plhiv_sexpever_std` = comm_typeinland*plhiv_sexpever_std)
+    # get coefficients 
+    draws = draws %>% mutate(cit = seq(1,n()))
+    coeffs = draws[c('cit', 'logit_prob_mi_baseline', colnames(draws)[grepl('logit_prob_mi_coeffs', colnames(draws))])]
+    colnames(coeffs)[3:ncol(coeffs)] = dm$col
+    # finally, calculate prob_mi
+    prob_mi = tibble(bind_rows(as_tibble(apply(as.matrix(coeffs)[,2:ncol(coeffs)], 1, 
+            function(x) inv_logit(colSums(t(sim_dm[3:ncol(sim_dm)])*x)))) %>%
+        mutate(dm_idx = seq(1,n())) %>%
+        pivot_longer(-dm_idx, names_to='cit') %>%
+        left_join(sim_dm %>% mutate(
+                dm_idx = seq(1,n())),
+            by='dm_idx') %>%
+        group_by(comm_type, sexpever, plhiv_sexpever_std) %>%
+        group_map(~cbind(.y, 
+            tibble(median = median(.x$value)),
+            get_hpd(.x$value) %>%
+                rename(
+                    'lower95' = lower,
+                    'upper95' = upper),
+            get_hpd(.x$value, credMass=0.5) %>%
+                rename(
+                    'lower50' = lower,
+                    'upper50' = upper)))))
+    # finally, we can plot
+    age_cat_split = str_split(gsub('\\(', '', gsub('\\]', '', plot_age_cat)), ',', simplify=TRUE)
+    title = paste(c('men, ', as.numeric(age_cat_split[1])+1, ' to ', age_cat_split[2], ' years old'), collapse='')
+    p = ggplot(prob_mi, aes(x=sexpever, y=median*100, ymin=lower95*100, ymax=upper95*100, color=comm_type, fill=comm_type)) + 
+        geom_ribbon(alpha=0.25, linewidth=0.25) +
+        geom_ribbon(aes(ymin=lower50*100, ymax=upper50*100), alpha=0.75, linewidth=0.25) +
+        geom_line() +
+        xlab('lifetime sex partners') +
+        ylim(0, ceiling(max(prob_mi$upper95)*100+1)) + 
+        ylab(expression(atop('predicted prevalence of', paste('multiple infections (', bar(delta), ', %)')))) +
+        scale_fill_manual(values=colors_dict, guide=NULL) +
+        scale_color_manual(values=
+            c(
+                inland = 
+                    colors_dict[['inland_dark']],
+                fishing = 
+                    colors_dict[['fishing_dark']]),
+            guide=NULL) +
+        gtheme +
+        theme(axis.title=element_text(size=14)) +
+        ggtitle(title)
 return(p)
 }
-
 
 p = arg_parser("plot summary of simulated data")
 p = add_argument(p, "--dat", help="input data file")
@@ -116,11 +113,12 @@ sexpever_dm = read_tsv(gsub('.Rds', '_design_cols.tsv', args$sexpeverFit), show_
 # we need standardization values
 dat = read_tsv(args$dat, show_col_types = FALSE)
 
+
 plot_list = list()
 for (age_cat in sort(unique(dat$age_cat_fine))){
 	plot_list[[length(plot_list)+1]] = 
 		plot_comm_type_sexpever(sexpever_fit_draws, sexpever_dm, dat, 
-			args$colors_dict, plot_age_cat = age_cat) +
+			colors_dict, plot_age_cat = age_cat) +
 		ylim(0, 32) +
 		ylab(NULL) 
 }

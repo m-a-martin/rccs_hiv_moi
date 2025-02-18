@@ -308,6 +308,9 @@ metadata$max_survey_date = paste(c(
 metadata = metadata %>% group_by(round) %>% 
 	mutate(round_median_year = str_split(median(visit_dt), "-", simplify=T)[,1])
 
+# add a second log10_copies column for interaction term
+metadata = metadata %>%
+	mutate(log10_copies_shared = log10_copies)
 
 write_tsv(metadata, 'data/input_metadata_internal.tsv')
 #write_tsv(metadata %>% select(-rccs_study_id, -comm_num, -visit_dt), 'data/input_metadata.tsv')

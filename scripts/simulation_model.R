@@ -31,10 +31,10 @@ simulate_data = function(args){
 		# how many individuals do not have risk factor
 		n_wo_risk = sum(tmp == 0)
 		tmp_mi[tmp == 1][sample(1:n_w_risk,
-			floor(args$prob_MI_risk_factor*n_w_risk), 
+			floor(args$prob_mi_risk_factor*n_w_risk), 
 			replace=F)] = 1
 		tmp_mi[tmp == 0][sample(1:n_wo_risk,
-			floor(args$prob_MI_baseline*n_wo_risk), 
+			floor(args$prob_mi_baseline*n_wo_risk), 
 			replace=F)] = 1
 		# if null risk factors then add those
 		if (args$null_risk_factors > 0){
@@ -47,7 +47,7 @@ simulate_data = function(args){
 			}	
 		}
 	}else{
-		tmp_mi[sample(1:nrow(sd), floor(nrow(sd) * args$prob_MI_baseline), replace=F)] = 1
+		tmp_mi[sample(1:nrow(sd), floor(nrow(sd) * args$prob_mi_baseline), replace=F)] = 1
 	}
 	sd["has_MI"] = tmp_mi
 	simulate_window_dat = function(N, seq_success, fpr, fnr, has_MI){
@@ -68,7 +68,7 @@ simulate_data = function(args){
 	sd$N_obs = 0
 	sd$MI_obs = 0
 	for (i in 1:args$N_ind){
-		N_MI = simulate_window_dat(args$N_windows, sd$seq_success[i], args$prob_MI_fpr, args$prob_MI_fnr, sd$has_MI[i])	
+		N_MI = simulate_window_dat(args$N_windows, sd$seq_success[i], args$prob_mi_fpr, args$prob_mi_fnr, sd$has_MI[i])	
 		sd$N_obs[i] = N_MI["N_obs"]
 		sd$MI_obs[i] = N_MI["MI_obs"]
 	}
@@ -93,15 +93,15 @@ p <- add_argument(p, "--logit_seq_prob_lvl_effect",
 p <- add_argument(p, "--logit_prob_seq_ind_sd", 
 	help="standard deviation on inidividual variation of sequencing success", 
 	nargs=1, type='double', default=1)
-p <- add_argument(p, "--prob_MI_baseline", help="population prevalence of multiple infection", 
+p <- add_argument(p, "--prob_mi_baseline", help="population prevalence of multiple infection", 
 	nargs=1, type='double', default=0.05)
-p <- add_argument(p, "--prob_MI_fpr", help="multiple infection false positive rate", 
+p <- add_argument(p, "--prob_mi_fpr", help="multiple infection false positive rate", 
 	nargs=1, type='double', default=0)
-p <- add_argument(p, "--prob_MI_fnr", help="multiple infection false negative rate", 
+p <- add_argument(p, "--prob_mi_fnr", help="multiple infection false negative rate", 
 	nargs=1, type='double', default=0)
 p <- add_argument(p, "--prob_risk_factor", help="population prevalence of harboring MI risk factor", 
 	nargs=1, type='double', default=0)
-p <- add_argument(p, "--prob_MI_risk_factor", help="population prevalence of multiple infections among those with risk factor", 
+p <- add_argument(p, "--prob_mi_risk_factor", help="population prevalence of multiple infections among those with risk factor", 
 	nargs=1, type='double', default=0)
 p <- add_argument(p, "--null_risk_factors", help="number of risk factors unassociated with multiple infection status", 
 	nargs=1, type='integer', default=0)
@@ -113,7 +113,7 @@ p <- add_argument(p, "--out", help="output file name",
 	nargs=1, type='character')
 args <- parse_args(p)
 
-args$logit_prob_MI = logit(args$prob_MI_baseline)
+args$logit_prob_mi_baseline = logit(args$prob_mi_baseline)
 
 if (!file.exists('simulations/')){
 	dir.create('simulations')	
@@ -137,14 +137,26 @@ out_arg = c(out_arg, "logit_prob_seq_coeffs[1]")
 out_val = c(out_val, args$logit_seq_prob_lvl_effect)
 
 if (args$prob_risk_factor > 0){
-	out_arg = c(out_arg ,'w[1]')
-	# calculate odds ratio
-	out_val = c(out_val, logit(args$prob_MI_risk_factor) - logit(args$prob_MI_baseline))
+	out_arg = c(out_arg ,'logit_prob_mi_coeffs[1]', 'logit_prob_mi_coeffs[2]')
+	# being verbose for the sake of it
+	log_or = log(
+		(args$prob_mi_risk_factor/(1-args$prob_mi_risk_factor)) / 
+			(args$prob_mi_baseline/(1-args$prob_mi_baseline) ))
+	# coefficient should be 1/2 log odds ratio
+
+	out_val = c(out_val, 
+		-log_or/2,
+		log_or/2)
+
 	for (i in 1:args$null_risk_factors){
-		out_arg = c(out_arg, paste(c('w[', as.character(i+1), ']'), collapse=''))
-		out_val = c(out_val, 0)
+		out_arg = c(out_arg, 
+			paste(c('logit_prob_mi_coeffs[', as.character(1 + i*2), ']'), collapse=''),
+			paste(c('logit_prob_mi_coeffs[', as.character(2+ i*2), ']'), collapse=''))
+		out_val = c(out_val, 0, 0)
 	}
 }
+
+
 
 if (!dir.exists('simulations')){
 	dir.create('simulations')
