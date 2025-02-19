@@ -186,17 +186,24 @@ build_stan_model = function(args, stan_data){
       }
       #### PRIORS BLOCK ####
       sd = if_else(label == 'seq', 2, 1)
-      priors = gsub("LABEL", label, paste(paste0(
-        "  LABEL_beta", 
-        names(n_per_cat), 
-        " ~ normal(0,", sd,
-        if_else(n_per_cat > 1, paste0(" * inv(sqrt(1 - inv(", n_per_cat, "))));\n"), ");\n")), collapse=''))
+      
       if (label == "mi" & args$miCoeffPriors == "shrinkage"){
+        priors = gsub("LABEL", label, paste(paste0(
+          "  LABEL_beta", 
+          names(n_per_cat), 
+          " ~ normal(0,", sd,
+          ");\n"), collapse=''))
         nu = 2
         priors = paste0(priors,
           gsub("LABEL", 'mi', gsub("NU", nu,
             paste0("  // Wikipedia: the standard Cauchy distribution is the Student's t-distribution with one degree of freedom, and so it may be constructed by any method that constructs the Student's t-distribution.\n  // The location-scale t distribution results from compounding a Gaussian distribution (normal distribution) with mean and unknown variance, with an inverse gamma distribution placed over the variance with parameters a = nu/2 and b = nu*LABEL_tau^2/2.\n",
               "  LABEL_r1_local ~ normal(0.0, 1.0);\n  LABEL_r2_local ~ inv_gamma(0.5*NU, 0.5*NU);\n  LABEL_r1_global ~ normal(0.0, 1.0);\n  LABEL_r2_global ~ inv_gamma(0.5, 0.5);"))))
+      }else{
+        priors = gsub("LABEL", label, paste(paste0(
+          "  LABEL_beta", 
+          names(n_per_cat), 
+          " ~ normal(0,", sd,
+          if_else(n_per_cat > 1, paste0(" * inv(sqrt(1 - inv(", n_per_cat, "))));\n"), ");\n")), collapse=''))
       }
       stan_template = str_replace(stan_template,
         gsub("LABEL", toupper(label), "  // <!-- LABEL_MODEL_COEFF_PRIOR -->"),

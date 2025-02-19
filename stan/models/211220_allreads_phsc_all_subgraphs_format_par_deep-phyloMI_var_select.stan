@@ -253,22 +253,22 @@ model{
   seq_beta2 ~ normal(0,2);
   seq_beta3 ~ normal(0,2 * inv(sqrt(1 - inv(2))));
 
-  mi_beta1 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
-  mi_beta2 ~ normal(0,1 * inv(sqrt(1 - inv(6))));
-  mi_beta3 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
-  mi_beta4 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
-  mi_beta5 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
-  mi_beta6 ~ normal(0,1 * inv(sqrt(1 - inv(3))));
-  mi_beta7 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
-  mi_beta8 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
-  mi_beta9 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
-  mi_beta10 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
-  mi_beta11 ~ normal(0,1 * inv(sqrt(1 - inv(3))));
-  mi_beta12 ~ normal(0,1 * inv(sqrt(1 - inv(3))));
-  mi_beta13 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
-  mi_beta14 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
-  mi_beta15 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
-  mi_beta16 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
+  mi_beta1 ~ normal(0,1);
+  mi_beta2 ~ normal(0,1);
+  mi_beta3 ~ normal(0,1);
+  mi_beta4 ~ normal(0,1);
+  mi_beta5 ~ normal(0,1);
+  mi_beta6 ~ normal(0,1);
+  mi_beta7 ~ normal(0,1);
+  mi_beta8 ~ normal(0,1);
+  mi_beta9 ~ normal(0,1);
+  mi_beta10 ~ normal(0,1);
+  mi_beta11 ~ normal(0,1);
+  mi_beta12 ~ normal(0,1);
+  mi_beta13 ~ normal(0,1);
+  mi_beta14 ~ normal(0,1);
+  mi_beta15 ~ normal(0,1);
+  mi_beta16 ~ normal(0,1);
   // Wikipedia: the standard Cauchy distribution is the Student's t-distribution with one degree of freedom, and so it may be constructed by any method that constructs the Student's t-distribution.
   // The location-scale t distribution results from compounding a Gaussian distribution (normal distribution) with mean and unknown variance, with an inverse gamma distribution placed over the variance with parameters a = nu/2 and b = nu*mi_tau^2/2.
   mi_r1_local ~ normal(0.0, 1.0);

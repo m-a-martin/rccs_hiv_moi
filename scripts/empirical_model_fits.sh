@@ -76,7 +76,7 @@ Rscript scripts/run_stan.R \
 	--filter "id_subgraph_reads > 0 & window_type == 'unique'" \
 	--miDesignMatrix sequencing_technology \
 	--seqDesignMatrix "sequencing_technology" "log10_copies_shared"  "sequencing_technology*log10_copies" \
-	--scaleVars '"log10_copies_shared" log10_copies:sequencing_technology' \
+	--scaleVars "log10_copies_shared" "log10_copies:sequencing_technology" \
 	--multivariateRiskRatios "sequencing_technology=='bait_capture':sequencing_technology=='amplicon'" \
 	--outAppend seq
 
@@ -135,7 +135,6 @@ Rscript scripts/run_stan.R \
 	--miDesignMatrix \
 		"sequencing_technology" \
 		"round" \
-		"plhiv_sexpever_std" \
 		"male_circumcision" \
 		"comm_type" \
 		"sex" \
@@ -152,32 +151,6 @@ Rscript scripts/run_stan.R \
 	--multivariateRiskRatios "comm_type=='fishing':comm_type=='inland'" "comm_type=='inland'&in_migrant==TRUE:comm_type=='inland'&in_migrant==FALSE"\
 	--outAppend var_select
 
-
-Rscript scripts/run_stan.R \
-	--dat output/211220_allreads_phsc_all_subgraphs_format_par.tsv \
-	--inputType full \
-	--stan stan/deep-phyloMI.stan \
-	--miCoeffPriors shrinkage \
-	--filter "id_subgraph_reads > 0 & window_type == 'unique'" \
-	--miDesignMatrix \
-		"sequencing_technology" \
-		"round" \
-		"plhiv_sexpever_std" \
-		"male_circumcision" \
-		"comm_type" \
-		"sex" \
-		"age_cat_coarse" \
-		"in_migrant" \
-		"barworker" \
-		"sex*comm_type"  \
-		"age_cat_coarse*comm_type" \
-		"in_migrant*comm_type" \
-		"barworker*comm_type" \
-	--seqDesignMatrix "sequencing_technology" "log10_copies_shared"  "sequencing_technology*log10_copies" \
-	--scaleVars "log10_copies_shared" "log10_copies:sequencing_technology" \
-	--strataPrevRatios "comm_type=='inland'&in_migrant==TRUE:comm_type=='inland'&in_migrant==FALSE"  "comm_type=='fishing'&sex=='M':comm_type=='fishing'&sex=='F'" \
-	--multivariateRiskRatios "comm_type=='fishing':comm_type=='inland'" "comm_type=='inland'&in_migrant==TRUE:comm_type=='inland'&in_migrant==FALSE"\
-	--outAppend TEST
 
 #### -------------------------------- ####
 #### 8. FORMAT PARAMETER CONFIG FILES ####
