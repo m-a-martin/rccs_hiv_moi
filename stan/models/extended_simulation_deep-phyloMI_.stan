@@ -7,6 +7,43 @@ functions {
     }
     return s;
   }
+
+  // C/O OF Zhi Ling SSHSPH, NUS
+  matrix qr_expand(int N) {
+  matrix [N,N] A = diag_matrix(rep_vector(1,N));
+  matrix [N,N-1] A_qr;
+  for(i in 1:N-1) {
+    A[N,i] = -1;
+    }
+    A[N,N] = 0;
+    A_qr = qr_Q(A)[,1:(N-1)];
+    return A_qr;
+  }
+
+  // C/O OF Zhi Ling SSHSPH, NUS
+  /** Sample from a multivariate normal with a given diagonal covariance matrix and sum-to-zero constraint
+  *
+  * @param zeta_2: diagonal of the covariance matrix
+  * @param Q: n*(n-1) matrix from QR decomposition, representing the orthonormal basis
+    of the n-1 dimensional subspace orthogonal to the all-ones vector in n-space
+  * @param coef_low_std: RV in n-1 dimensional space following standard normal distribution
+  * @return: RV in n-dimensional space following N(0, D - D 1 (1' D 1)^{-1} 1'D)
+    where the diagonal of D is adjusted by n/(n-1) to compensate for the reduced edge variance due to constraints
+  */
+  vector adj_cov_cholesky_sample(vector zeta_2, matrix Q, vector coef_low_std) {
+    int n = size(zeta_2);
+    //real adj_factor = n / (n - 1);
+    real adj_factor = n * 1.0 / (n - 1);
+    matrix[n,n] D = diag_matrix(adj_factor * zeta_2);
+    vector[n] one = rep_vector(1.0, n);
+    matrix[n,n] D_constrained = D - D * one * one' * D / trace(D);
+    matrix[n-1,n-1] S = Q' * D_constrained * Q;
+    matrix[n-1,n-1] L = cholesky_decompose(S);
+    vector[n-1] coef_low = L * coef_low_std; // Sample from N(0, S)
+    vector[n] coef = Q * coef_low; // Sample from N(0, D_constrained)
+    return coef;
+  }
+
 } 
 
 
@@ -95,16 +132,16 @@ parameters{
   // below are optional depending on model
   real seq_beta1;
 
-  sum_to_zero_vector[2] mi_beta1;
-  sum_to_zero_vector[2] mi_beta2;
-  sum_to_zero_vector[2] mi_beta3;
-  sum_to_zero_vector[2] mi_beta4;
-  sum_to_zero_vector[2] mi_beta5;
+  vector[1] mi_beta1;
+  vector[1] mi_beta2;
+  vector[1] mi_beta3;
+  vector[1] mi_beta4;
+  vector[1] mi_beta5;
 
-  real<lower=0> r1_global;
- real<lower=0> r2_global;
-  vector<lower=0>[10] r1_local;
-  vector<lower=0>[10] r2_local;
+  real<lower=0> mi_r1_global;
+  real<lower=0> mi_r2_global;
+  vector<lower=0>[10] mi_r1_local;
+  vector<lower=0>[10] mi_r2_local;
 }
 
 
@@ -120,23 +157,36 @@ transformed parameters{
   vector[N_missing > 0 ? N_missing : 0] X_mi_missing;
   // below are optional depending on model
   vector[1] logit_prob_seq_coeffs;
-  real<lower=0> tau;
-  vector<lower=0>[10] lambda;
+  real<lower=0> mi_tau;
+  vector<lower=0>[10] mi_lambda;
   vector[10] logit_prob_mi_coeffs;
-  tau = r1_global * sqrt(r2_global);
-  lambda = r1_local .* sqrt(r2_local);
+  mi_tau = mi_r1_global * sqrt(mi_r2_global);
+  mi_lambda = mi_r1_local .* sqrt(mi_r2_local);
+  vector[2] mi_zeta1;
+  vector[2] mi_zeta2;
+  vector[2] mi_zeta3;
+  vector[2] mi_zeta4;
+  vector[2] mi_zeta5;
+
   
   // construct local design matrix with missing data
   // local construction avoids saving all of these objects in the case of missing data
   {
-   // combine coefficients into a single vector
-  logit_prob_mi_coeffs = [mi_beta1[1],mi_beta1[2],mi_beta2[1],mi_beta2[2],mi_beta3[1],mi_beta3[2],mi_beta4[1],mi_beta4[2],mi_beta5[1],mi_beta5[2]]' .* lambda*tau;
-  matrix[1979, 10] X_mi_imputed = X_mi[,];
-  X_mi_missing = missing_min + (missing_max - missing_min) .* X_mi_missing_raw;
-  for (i in 1:0){
-  X_mi_imputed[idx_missing[i,1], idx_missing[i,2]] = X_mi_missing[i] - X_mi_missing_std[i];
-  }
-  prob_mi = inv_logit( logit_prob_mi_baseline + X_mi_imputed*logit_prob_mi_coeffs );
+    mi_zeta1 = adj_cov_cholesky_sample(mi_lambda[1:2]^2, qr_expand(2), mi_beta1);
+    mi_zeta2 = adj_cov_cholesky_sample(mi_lambda[3:4]^2, qr_expand(2), mi_beta2);
+    mi_zeta3 = adj_cov_cholesky_sample(mi_lambda[5:6]^2, qr_expand(2), mi_beta3);
+    mi_zeta4 = adj_cov_cholesky_sample(mi_lambda[7:8]^2, qr_expand(2), mi_beta4);
+    mi_zeta5 = adj_cov_cholesky_sample(mi_lambda[9:10]^2, qr_expand(2), mi_beta5);
+     // combine coefficients into a single vector
+    // zetas of size > 1 are already locally shrunk
+    // betas of size 1 are not
+    logit_prob_mi_coeffs = [mi_zeta1[1],mi_zeta1[2],mi_zeta2[1],mi_zeta2[2],mi_zeta3[1],mi_zeta3[2],mi_zeta4[1],mi_zeta4[2],mi_zeta5[1],mi_zeta5[2]]'*mi_tau;
+    matrix[1979, 10] X_mi_imputed = X_mi[,];
+    X_mi_missing = missing_min + (missing_max - missing_min) .* X_mi_missing_raw;
+    for (i in 1:0){
+      X_mi_imputed[idx_missing[i,1], idx_missing[i,2]] = X_mi_missing[i] - X_mi_missing_std[i];
+    }
+    prob_mi = inv_logit( logit_prob_mi_baseline + X_mi_imputed*logit_prob_mi_coeffs );
   }
   
   // calcualte transformed model parameters
@@ -164,18 +214,19 @@ model{
   target += normal_lpdf(logit_prob_mi_fpr | 0, 1);
   target += normal_lpdf(logit_prob_mi_fnr | 0, 1);
   // below are optional depending on model
-  target += normal_lpdf(logit_prob_seq_coeffs | 0, 2 );
-  target += normal_lpdf(mi_beta1 | 0, 1);
-  target += normal_lpdf(mi_beta2 | 0, 1);
-  target += normal_lpdf(mi_beta3 | 0, 1);
-  target += normal_lpdf(mi_beta4 | 0, 1);
-  target += normal_lpdf(mi_beta5 | 0, 1);
+  seq_beta1 ~ normal(0,2);
+
+  mi_beta1 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
+  mi_beta2 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
+  mi_beta3 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
+  mi_beta4 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
+  mi_beta5 ~ normal(0,1 * inv(sqrt(1 - inv(2))));
   // Wikipedia: the standard Cauchy distribution is the Student's t-distribution with one degree of freedom, and so it may be constructed by any method that constructs the Student's t-distribution.
-  // The location-scale t distribution results from compounding a Gaussian distribution (normal distribution) with mean and unknown variance, with an inverse gamma distribution placed over the variance with parameters a = nu/2 and b = nu*tau^2/2.
-  r1_local ~ normal(0.0, 1.0);
-  r2_local ~ inv_gamma(0.5*2, 0.5*2);
-  r1_global ~ normal(0.0, 1.0);
-  r2_global ~ inv_gamma(0.5, 0.5);
+  // The location-scale t distribution results from compounding a Gaussian distribution (normal distribution) with mean and unknown variance, with an inverse gamma distribution placed over the variance with parameters a = nu/2 and b = nu*mi_tau^2/2.
+  mi_r1_local ~ normal(0.0, 1.0);
+  mi_r2_local ~ inv_gamma(0.5*2, 0.5*2);
+  mi_r1_global ~ normal(0.0, 1.0);
+  mi_r2_global ~ inv_gamma(0.5, 0.5);
 
   // priors for missing data
   if (N_missing > 0){

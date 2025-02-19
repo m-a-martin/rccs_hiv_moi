@@ -96,7 +96,8 @@ model{
   // multiple infection status
   target += normal_lpdf(logit_prob_mi_baseline | 0, 3.16 );
   // below are optional depending on model
-  target += normal_lpdf(logit_prob_seq_coeffs | 0, 2 );
+  seq_beta1 ~ normal(0,2);
+
 
   for ( i in 1:N_ind_with_MI_zero )
   {

@@ -95,9 +95,18 @@ build_stan_model = function(args, stan_data){
     }
     # if shrinkage priors
     if (label == "mi" & args$miCoeffPriors == "shrinkage"){
+      model_coeffs = ""
+      for (beta_cat in names(beta_cats_counts)){
+        model_coeffs = paste0(model_coeffs,
+            if_else(beta_cats_counts[beta_cat] == 1,
+              paste0("  real LABEL_beta", beta_cat, ";\n"),
+              paste0(gsub("K", beta_cats_counts[beta_cat]-1, "  vector[K] LABEL_beta"),
+                beta_cat, ";\n")))
+      }
       model_coeffs = paste0(model_coeffs,
           gsub("K", ncol(X),
-            "\n  real<lower=0> r1_global;\n real<lower=0> r2_global;\n  vector<lower=0>[K] r1_local;\n  vector<lower=0>[K] r2_local;"))
+            paste0("\n  real<lower=0> LABEL_r1_global;\n  real<lower=0> LABEL_r2_global;\n  vector<lower=0>[K] LABEL_r1_local;\n",
+            "  vector<lower=0>[K] LABEL_r2_local;")))
     }
     stan_template = str_replace(stan_template,
       gsub("LABEL", toupper(label), "  // <!-- LABEL_MODEL_COEFFS -->"),
@@ -106,11 +115,27 @@ build_stan_model = function(args, stan_data){
     # add all coefficients into a single vector
     # if shrinkage priors
     if (label == "mi" & args$miCoeffPriors == "shrinkage"){
-      # define vectors
+      transformed_parameters_declare = gsub("K", ncol(X),
+          paste0("  real<lower=0> LABEL_tau;\n  vector<lower=0>[K] LABEL_lambda;\n  vector[K] logit_prob_LABEL_coeffs;",
+            "\n  LABEL_tau = LABEL_r1_global * sqrt(LABEL_r2_global);\n  LABEL_lambda = LABEL_r1_local .* sqrt(LABEL_r2_local);\n"))
+      transformed_parameters = ""
+      for (beta_cat in names(beta_cats_counts)){
+        if (beta_cats_counts[beta_cat] > 1){
+          transformed_parameters_declare = paste0(transformed_parameters_declare,
+            gsub("K", beta_cats_counts[beta_cat], 
+              paste0("  vector[K] LABEL_zeta",beta_cat,";\n")))
+          LABEL_lambda_idx = if_else(beta_cat == 1, paste0("1:",beta_cats_counts[beta_cat]), 
+            paste0(cumsum(beta_cats_counts)[(as.numeric(beta_cat)-1)]+1,":", 
+              cumsum(beta_cats_counts)[(as.numeric(beta_cat))]))
+          transformed_parameters = paste0(transformed_parameters,
+            gsub("LABEL_lambda_IDX", LABEL_lambda_idx, gsub("K", beta_cats_counts[beta_cat],
+              paste0("    LABEL_zeta", beta_cat, 
+                " = adj_cov_cholesky_sample(LABEL_lambda[LABEL_lambda_IDX]^2, qr_expand(K), LABEL_beta", beta_cat,");\n"))))
+          }
+      }
       stan_template = str_replace(stan_template,
         gsub("LABEL", toupper(label), "  // <!-- LABEL_MODEL_COEFF_VEC -->"),
-        gsub("LABEL", label, gsub("K", ncol(X),
-          "  real<lower=0> tau;\n  vector<lower=0>[K] lambda;\n  vector[K] logit_prob_LABEL_coeffs;\n  tau = r1_global * sqrt(r2_global);\n  lambda = r1_local .* sqrt(r2_local);")))
+        gsub("LABEL", label, transformed_parameters_declare))
       # build coeff vector
       n_per_cat = table(beta_cats)
       beta_labels = (tibble(cat = beta_cats, lag_cat = lag(cat)) %>%
@@ -119,18 +144,20 @@ build_stan_model = function(args, stan_data){
           id = cumsum(start)) %>%
         group_by(id) %>%
         mutate(x = paste0('[', row_number(), '],')))$x
+      transformed_parameters = gsub("LABEL", label, paste(transformed_parameters,
+          gsub(',\\]', '\\]', 
+            paste0(
+              '    // combine coefficients into a single vector\n    // zetas of size > 1 are already locally shrunk\n    // betas of size 1 are not\n',
+              '    logit_prob_LABEL_coeffs = [',
+              paste(
+                if_else(n_per_cat[beta_cats] > 1,
+                  paste0('LABEL_zeta', beta_cats, beta_labels),
+                  paste0('LABEL_beta', beta_cats, '*LABEL_lambda[', seq(1,length(beta_labels)),'],')),
+                collapse=''),
+              "]'*LABEL_tau;"))))
       stan_template = str_replace(stan_template,
-        gsub("LABEL", toupper(label), " // <!-- LABEL_MODEL_COEFF_VEC_ELEM -->"),
-        gsub("LABEL", label, gsub(',\\]', '\\]', 
-          paste0(
-            '  // combine coefficients into a single vector\n  logit_prob_LABEL_coeffs = [',
-            paste(paste0(paste0('LABEL_beta', beta_cats), 
-            if_else(
-              n_per_cat[beta_cats] > 1,
-              beta_labels,
-              ",")),
-            collapse=''),
-            "]' .* lambda*tau;"))))
+        gsub("LABEL", toupper(label), "    // <!-- LABEL_MODEL_COEFF_VEC_ELEM -->"),
+        transformed_parameters)
     }else{
       # define coeff vector
       stan_template = str_replace(stan_template,
@@ -157,6 +184,23 @@ build_stan_model = function(args, stan_data){
             collapse=''),
             "]';"))))
       }
+      #### PRIORS BLOCK ####
+      sd = if_else(label == 'seq', 2, 1)
+      priors = gsub("LABEL", label, paste(paste0(
+        "  LABEL_beta", 
+        names(n_per_cat), 
+        " ~ normal(0,", sd,
+        if_else(n_per_cat > 1, paste0(" * inv(sqrt(1 - inv(", n_per_cat, "))));\n"), ");\n")), collapse=''))
+      if (label == "mi" & args$miCoeffPriors == "shrinkage"){
+        nu = 2
+        priors = paste0(priors,
+          gsub("LABEL", 'mi', gsub("NU", nu,
+            paste0("  // Wikipedia: the standard Cauchy distribution is the Student's t-distribution with one degree of freedom, and so it may be constructed by any method that constructs the Student's t-distribution.\n  // The location-scale t distribution results from compounding a Gaussian distribution (normal distribution) with mean and unknown variance, with an inverse gamma distribution placed over the variance with parameters a = nu/2 and b = nu*LABEL_tau^2/2.\n",
+              "  LABEL_r1_local ~ normal(0.0, 1.0);\n  LABEL_r2_local ~ inv_gamma(0.5*NU, 0.5*NU);\n  LABEL_r1_global ~ normal(0.0, 1.0);\n  LABEL_r2_global ~ inv_gamma(0.5, 0.5);"))))
+      }
+      stan_template = str_replace(stan_template,
+        gsub("LABEL", toupper(label), "  // <!-- LABEL_MODEL_COEFF_PRIOR -->"),
+        priors)
       return(stan_template)
     }
   # read in template
@@ -173,10 +217,6 @@ build_stan_model = function(args, stan_data){
       "  // <!-- SEQ_MODEL -->",
       paste0(
         "  prob_seq_1 = inv_logit( logit_prob_seq_baseline + logit_prob_seq_ind + X_seq*logit_prob_seq_coeffs );"))
-    #### PRIORS BLOCK ####
-    stan_template = str_replace(stan_template,
-      "  // <!-- SEQ_MODEL_COEFF_PRIOR -->",
-      "  target += normal_lpdf(logit_prob_seq_coeffs | 0, 2 );")
   }else{
     #### TRANSFORMED-PARAMETERS BLOCK ####
     # actual calculation of prob_seq
@@ -195,34 +235,17 @@ build_stan_model = function(args, stan_data){
     # actual calculation of prob_mi
     mi_model = paste0(
       "  matrix[N, K] X_mi_imputed = X_mi[,];\n",
-      "  X_mi_missing = missing_min + (missing_max - missing_min) .* X_mi_missing_raw;\n",
-      "  for (i in 1:N_missing){\n",
-      "  X_mi_imputed[idx_missing[i,1], idx_missing[i,2]] = X_mi_missing[i] - X_mi_missing_std[i];\n",
-      "  }\n",
-      "  prob_mi = inv_logit( logit_prob_mi_baseline + X_mi_imputed*logit_prob_mi_coeffs );")
+      "    X_mi_missing = missing_min + (missing_max - missing_min) .* X_mi_missing_raw;\n",
+      "    for (i in 1:N_missing){\n",
+      "      X_mi_imputed[idx_missing[i,1], idx_missing[i,2]] = X_mi_missing[i] - X_mi_missing_std[i];\n",
+      "    }\n",
+      "    prob_mi = inv_logit( logit_prob_mi_baseline + X_mi_imputed*logit_prob_mi_coeffs );")
     stan_template = str_replace(stan_template,
       "  // <!-- MI_MODEL -->",
       gsub("K", ncol(stan_data$X_mi),
         gsub("N", nrow(stan_data$X_mi),
           gsub("N_missing", stan_data$N_missing,
             mi_model))))
-    #### PRIORS BLOCK ####
-    if (args$miCoeffPriors == "shrinkage"){
-      nu = 2
-      mi_priors = ''
-      for (beta_cat in unique(stan_data$mi_beta_cats)){
-        mi_priors = paste0(mi_priors, gsub("CAT", beta_cat, "  target += normal_lpdf(mi_betaCAT | 0, 1);\n"))
-      }
-      mi_priors = paste0(mi_priors,
-        gsub("NU", nu,
-          paste0("  // Wikipedia: the standard Cauchy distribution is the Student's t-distribution with one degree of freedom, and so it may be constructed by any method that constructs the Student's t-distribution.\n  // The location-scale t distribution results from compounding a Gaussian distribution (normal distribution) with mean and unknown variance, with an inverse gamma distribution placed over the variance with parameters a = nu/2 and b = nu*tau^2/2.\n",
-            "  r1_local ~ normal(0.0, 1.0);\n  r2_local ~ inv_gamma(0.5*NU, 0.5*NU);\n  r1_global ~ normal(0.0, 1.0);\n  r2_global ~ inv_gamma(0.5, 0.5);")))
-    }else{
-      mi_priors = "  target += normal_lpdf(logit_prob_mi_coeffs | 0, 1 );"
-    }
-    stan_template = str_replace(stan_template,
-      "  // <!-- MI_MODEL_COEFF_PRIOR -->",
-      mi_priors)
   }else{
     #### TRANSFORMED-PARAMETERS BLOCK ####
     # actual calculation of prob_seq
@@ -337,7 +360,7 @@ run_stan = function(args){
     seed = 42,
     chains = 4,
     parallel_chains = 4,
-    iter_warmup = 500,
+    iter_warmup = 2000,
     iter_sampling = 2000,
     refresh = 500, # print update every 500 iters,
     save_warmup = TRUE,
@@ -368,12 +391,12 @@ p = add_argument(p, "--seqDesignMatrix", help="components of design matrix for s
 #### MISSING VALUES ####
 p = add_argument(p, "--miMissingDat", 
   help="list of data values to consider as missing. expected format is 
-    var:missing_val;missing_min:missing_max:missing_prior1;missing_prior2;missing_std. Where 
+    var:missing_val;missing_min:missing_max:missing_prioLABEL_r1;missing_prioLABEL_r2;missing_std. Where 
     missing_val is the value to consider as missing, 
     missing_min is the minimum imputation value,
     missing_max is the maximum imputation value,
-    missing_prior1 is the shape, 
-    missing_prior2 is the scale, and 
+    missing_prioLABEL_r1 is the shape, 
+    missing_prioLABEL_r2 is the scale, and 
     missing_std is the column to use to standardize missing values, use 'none' or omit for no standardization.", 
   nargs=Inf)
 #### PRIORS ####
@@ -415,9 +438,11 @@ d_f = out$d %>% ungroup() %>% mutate(idx = seq(1,n()))
 #fit = readRDS('fit/211220_allreads_phsc_all_subgraphs_format_par_deep-phyloMI_age_sex_comm.Rds')
 # save input as Rds file
 # summarise parameters
+
 fit_draws = as_tibble(fit$draws(
     inc_warmup = FALSE,
     format = "draws_df"))
+
 
 fit_draws = fit_draws[,
     colnames(fit_draws) %in%
@@ -428,11 +453,13 @@ fit_draws = fit_draws[,
         'logit_prob_mi_fnr',
         'prob_mi_fpr',
         'prob_mi_fnr',
-        'tau',
-        'lambda') |
+        'seq_tau',
+        'mi_tau') |
+    grepl('mi_lambda', colnames(fit_draws)) |
+    grepl('seq_lambda', colnames(fit_draws)) |
     grepl('logit_prob_seq_coeffs', colnames(fit_draws)) |
     grepl('logit_prob_mi_coeffs', colnames(fit_draws)) |
-    grepl('lambda', colnames(fit_draws)) |
+    grepl('LABEL_lambda', colnames(fit_draws)) |
     (grepl('prob_mi\\[', colnames(fit_draws)) & 
       !grepl('log', colnames(fit_draws)))]  %>%
   mutate(cit = seq(1,n()))
