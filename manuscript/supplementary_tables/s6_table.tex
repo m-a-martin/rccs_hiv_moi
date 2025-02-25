@@ -1,0 +1,80 @@
+%TEMPLATE_COMMENTS
+\nonstopmode
+\documentclass[10pt,letterpaper]{article}
+\usepackage[top=1in,left=1in,right=1in,bottom=1in]{geometry}
+
+% long tables
+\usepackage{longtable}
+
+% amsmath and amssymb packages, useful for mathematical formulas and symbols
+\usepackage{amsmath,amssymb, mathtools}
+\newcommand{\one}[1]{\mathop{{}\mathbf{1}}\nolimits_{#1}}
+
+% textcomp package and marvosym package for additional characters
+\usepackage{textcomp,marvosym}
+
+% array package and thick rules for tables
+\usepackage{array}
+
+% create "+" rule type for thick vertical lines
+\newcolumntype{+}{!{\vrule width 2pt}}
+
+% create \thickcline for thick horizontal lines of variable length
+\newlength\savedwidth
+\newcommand\thickcline[1]{%
+  \noalign{\global\savedwidth\arrayrulewidth\global\arrayrulewidth 2pt}%
+  \cline{#1}%
+  \noalign{\vskip\arrayrulewidth}%
+  \noalign{\global\arrayrulewidth\savedwidth}%
+}
+
+% \thickhline command for thick horizontal lines that span the table
+\newcommand\thickhline{\noalign{\global\savedwidth\arrayrulewidth\global\arrayrulewidth 2pt}%
+\hline
+\noalign{\global\arrayrulewidth\savedwidth}}
+
+
+
+\usepackage{datatool}
+\DTLsetseparator{,}% Set the separator between the columns.
+% todo add statistics file directly into this document
+\DTLloaddbtex{\mydata}{../../output/statistics.dbtex}
+\newcommand{\var}[1]{\DTLfetch{\mydata}{labels}{#1}{vals}}
+
+
+\begin{document}
+\begin{table}[hbp!]
+%\begin{adjustwidth}{-2.25in}{0in} % Comment out/remove adjustwidth environment if table fits in text column.
+\centering
+\begin{tabular}[t]{|l|c|c|c|c|c|c|}
+\hline
+Parameter & True Value & Prior & Median (95\% HPD) & Bulk ESS & Tail ESS & $\hat{R}$ \\ \thickhline
+$\alpha_0$ & \protect \var{full_base_logit_prob_seq_baseline} & Normal(0,2\textsuperscript{2}) &
+  \var{full_base_fit_logit_prob_seq_baseline_median} 
+    (\var{full_base_fit_logit_prob_seq_baseline_lower}, \var{full_base_fit_logit_prob_seq_baseline_upper}) & 
+  \var{full_base_fit_logit_prob_seq_baseline_bulk_ess} & 
+  \var{full_base_fit_logit_prob_seq_baseline_tail_ess} & 
+  \var{full_base_fit_logit_prob_seq_baseline_rhat} \\ \hline
+  $\alpha_1$ & \var{full_base_logit_prob_seq_coeffs1} & 
+  Normal(0,2\textsuperscript{2}) &
+  \var{full_base_fit_logit_prob_seq_coeffs1_median}
+    (\var{full_base_fit_logit_prob_seq_coeffs1_lower}, \var{full_base_fit_logit_prob_seq_coeffs1_upper}) & 
+  \var{full_base_fit_logit_prob_seq_coeffs1_bulk_ess} & 
+  \var{full_base_fit_logit_prob_seq_coeffs1_tail_ess} & 
+  \var{full_base_fit_logit_prob_seq_coeffs1_rhat} \\ \hline
+$\sigma_{ind}$ & \var{full_base_logit_prob_seq_ind_sd} & 
+Half-Cauchy(0,1) & 
+  \var{full_base_fit_logit_prob_seq_ind_sd_median}
+    (\var{full_base_fit_logit_prob_seq_ind_sd_lower}, \var{full_base_fit_logit_prob_seq_ind_sd_upper}) & 
+  \var{full_base_fit_logit_prob_seq_ind_sd_bulk_ess} & 
+  \var{full_base_fit_logit_prob_seq_ind_sd_tail_ess} &
+  \var{full_base_fit_logit_prob_seq_ind_sd_rhat} \\ \hline
+$\delta_0$ & \var{full_base_logit_prob_mi_baseline} & Normal(0,3.16\textsuperscript{2}) &
+  \var{full_base_fit_logit_prob_mi_baseline_median}
+    (\var{full_base_fit_logit_prob_mi_baseline_lower}, \var{full_base_fit_logit_prob_mi_baseline_upper}) & 
+  \var{full_base_fit_logit_prob_mi_baseline_bulk_ess} & 
+  \var{full_base_fit_logit_prob_mi_baseline_tail_ess} & 
+  \var{full_base_fit_logit_prob_mi_baseline_rhat} \\ \hline
+\end{tabular}
+\end{table}
+\end{document}

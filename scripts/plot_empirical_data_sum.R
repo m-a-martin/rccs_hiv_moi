@@ -210,4 +210,5 @@ p = plot_grid(
 
 
 ggsave(paste(c('figures/', args$out, '.pdf'), collapse=''), p, width=10, height=14)
+ggsave(paste(c('figures/tif/', args$out,'.tif'), collapse=''), p, device="tif", width=10, height=14)
 

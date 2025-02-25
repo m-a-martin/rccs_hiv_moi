@@ -160,8 +160,24 @@ cp ~/Library/CloudStorage/Dropbox/Apps/Overleaf/HIV\ multiple\ infection\ manusc
 	manuscript/.
 cp ~/Library/CloudStorage/Dropbox/Apps/Overleaf/HIV\ multiple\ infection\ manuscript/manuscript/supplementary_files/*.tex \
 	manuscript/supplementary_files/.
+cp ~/Library/CloudStorage/Dropbox/Apps/Overleaf/HIV\ multiple\ infection\ manuscript/manuscript/supplementary_tables/*.tex \
+	manuscript/supplementary_tables/.
+# copy figures over
+scp figures/tif/empirical_data_sum.tif manuscript/figures/fig_1.tif
+scp figures/tif/full_simulation_full_fit.tif manuscript/figures/fig_2.tif
+scp figures/tif/empirical_full_fit.tif manuscript/figures/fig_3.tif
+scp figures/tif/empirical_mi_predictors.tif manuscript/figures/fig_4.tif
+scp figures/vl_seq_success.pdf manuscript/supplementary_figures/s1_fig.pdf
+scp figures/empirical_cophenetic_dists.pdf manuscript/supplementary_figures/s2_fig.pdf
+scp figures/full_simulation_sensitivity_delta.pdf manuscript/supplementary_figures/s3_fig.pdf
+scp figures/full_simulation_sensitivity_lambda.pdf manuscript/supplementary_figures/s4_fig.pdf
+scp figures/full_simulation_sensitivity_epsilon.pdf manuscript/supplementary_figures/s5_fig.pdf
+scp figures/empirical_full_fit_log.pdf manuscript/supplementary_figures/s6_fig.pdf
+scp figures/mean_obs_sexpever.pdf manuscript/supplementary_figures/s7_fig.pdf
+scp figures/sexpever_std_curve.pdf manuscript/supplementary_figures/s8_fig.pdf
+scp figures/empirical_sexpever_men_prob_mi.pdf manuscript/supplementary_figures/s9_fig.pdf
 
-# todo equation numbering
+
 cd manuscript
 rm -rf ./*_vals_figs.tex
 rm -rf ./*_vals.tex
@@ -182,11 +198,21 @@ scp ../references.bib .
 scp ../plos2015.bst .
 # create a version with no figures
 for i in ./*.tex; do
-	bash ../../scripts/format_manuscript.sh $i ../../output/statistics.scsv
+	bash ../../scripts/compile_manuscript.sh $i ../../output/statistics.scsv
+done
+
+cd ../supplementary_tables
+rm -rf ./*_vals_figs.tex
+rm -rf ./*_vals.tex
+rm -rf ./tmp.tex
+scp ../references.bib .
+scp ../plos2015.bst .
+# create a version with no figures
+for i in ./*.tex; do
+	bash ../../scripts/compile_manuscript.sh $i ../../output/statistics.scsv
 done
 
 cd ..
-
 # move to sharing folder
 mkdir -p to_share
 mkdir -p to_share/word_figs
@@ -194,31 +220,12 @@ mkdir -p to_share/word_nofigs
 mkdir -p to_share/pdf
 
 scp *.pdf to_share/pdf/.
-scp supplementary_files/*.pdf to_share/pdf/.
-scp supplementary_files/*.txt to_share/pdf/.
-scp supplementary_files/*.txt to_share/word_figs/.
-scp supplementary_files/*.txt to_share/word_nofigs/.
-scp supplementary_files/*.csv to_share/pdf/.
-scp supplementary_files/*.csv to_share/word_figs/.
-scp supplementary_files/*.csv to_share/word_nofigs/.
 scp *.docx to_share/word_nofigs/.
-scp supplementary_files/*.docx to_share/word_nofigs/.
 for i in to_share/word_nofigs/*_figs.docx; do
 	mv $i ${i/nofigs/figs}
 done
 
-
-# latexdiff (remove this)
-latexdiff previous_versions/2024-10-23/rccs_hiv_multiple_infections_vals.tex rccs_hiv_multiple_infections_vals.tex \
-	> compare_2024-10-23_2025-02-17.tex
-
-lualatex compare_2024-10-23_2025-02-17.tex
-bibtex compare_2024-10-23_2025-02-17
-lualatex compare_2024-10-23_2025-02-17.tex
-lualatex compare_2024-10-23_2025-02-17.tex
-
-mv compare_2024-10-23_2025-02-17* previous_versions/compare_2024-10-23_2025-02-17/.
-cd ..
- 
-
-#### end final code here ####
+scp supplementary_files/*.pdf to_share/pdf/.
+scp supplementary_tables/*.pdf to_share/pdf/.
+scp supplementary_files/*.txt to_share/pdf/.
+scp supplementary_files/*.csv to_share/pdf/.

@@ -1,0 +1,66 @@
+%TEMPLATE_COMMENTS
+\nonstopmode
+\documentclass[10pt,letterpaper]{article}
+\usepackage[top=1in,left=1in,right=1in,bottom=1in]{geometry}
+
+% long tables
+\usepackage{longtable}
+
+% amsmath and amssymb packages, useful for mathematical formulas and symbols
+\usepackage{amsmath,amssymb, mathtools}
+\newcommand{\one}[1]{\mathop{{}\mathbf{1}}\nolimits_{#1}}
+
+% textcomp package and marvosym package for additional characters
+\usepackage{textcomp,marvosym}
+
+% array package and thick rules for tables
+\usepackage{array}
+
+% create "+" rule type for thick vertical lines
+\newcolumntype{+}{!{\vrule width 2pt}}
+
+% create \thickcline for thick horizontal lines of variable length
+\newlength\savedwidth
+\newcommand\thickcline[1]{%
+  \noalign{\global\savedwidth\arrayrulewidth\global\arrayrulewidth 2pt}%
+  \cline{#1}%
+  \noalign{\vskip\arrayrulewidth}%
+  \noalign{\global\arrayrulewidth\savedwidth}%
+}
+
+% \thickhline command for thick horizontal lines that span the table
+\newcommand\thickhline{\noalign{\global\savedwidth\arrayrulewidth\global\arrayrulewidth 2pt}%
+\hline
+\noalign{\global\arrayrulewidth\savedwidth}}
+
+
+
+\usepackage{datatool}
+\DTLsetseparator{,}% Set the separator between the columns.
+% todo add statistics file directly into this document
+\DTLloaddbtex{\mydata}{../../output/statistics.dbtex}
+\newcommand{\var}[1]{\DTLfetch{\mydata}{labels}{#1}{vals}}
+
+
+\begin{document}
+\begin{table}[hbp!]
+\centering
+\begin{tabular}[t]{|l|l|l|c|c|}
+\hline
+Age & Sex & Community type & $W_s$, Participant-visits 2014 - 2019 (\%) & $Q_s$, Participants w/ PHSC (\%) \\ \thickhline
+(14, 24] & F & Inland  & \var{age_cat_coarse_(14,24]_sex_F_comm_type_inland_n_viremic_participant_visits} (\var{age_cat_coarse_(14,24]_sex_F_comm_type_inland_p_viremic_participant_visits}\%)   & \var{age_cat_coarse_(14,24]_sex_F_comm_type_inland_n_phsc_participants} (\var{age_cat_coarse_(14,24]_sex_F_comm_type_inland_p_phsc_participants}\%)\\
+(14, 24] & F & Fishing   & \var{age_cat_coarse_(14,24]_sex_F_comm_type_fishing_n_viremic_participant_visits} (\var{age_cat_coarse_(14,24]_sex_F_comm_type_fishing_p_viremic_participant_visits}\%)  & \var{age_cat_coarse_(14,24]_sex_F_comm_type_fishing_n_phsc_participants} (\var{age_cat_coarse_(14,24]_sex_F_comm_type_fishing_p_phsc_participants}\%)\\
+(14, 24] & M & Inland  & \var{age_cat_coarse_(14,24]_sex_M_comm_type_inland_n_viremic_participant_visits} (\var{age_cat_coarse_(14,24]_sex_M_comm_type_inland_p_viremic_participant_visits}\%) & \var{age_cat_coarse_(14,24]_sex_M_comm_type_inland_n_phsc_participants} (\var{age_cat_coarse_(14,24]_sex_M_comm_type_inland_p_phsc_participants}\%)\\
+(14, 24] & M & Fishing   & \var{age_cat_coarse_(14,24]_sex_M_comm_type_fishing_n_viremic_participant_visits} (\var{age_cat_coarse_(14,24]_sex_M_comm_type_fishing_p_viremic_participant_visits}\%)  & \var{age_cat_coarse_(14,24]_sex_M_comm_type_fishing_n_phsc_participants} (\var{age_cat_coarse_(14,24]_sex_M_comm_type_fishing_p_phsc_participants}\%)\\
+(24, 34] & F & Inland   & \var{age_cat_coarse_(24,34]_sex_F_comm_type_inland_n_viremic_participant_visits} (\var{age_cat_coarse_(24,34]_sex_F_comm_type_inland_p_viremic_participant_visits}\%)  & \var{age_cat_coarse_(24,34]_sex_F_comm_type_inland_n_phsc_participants} (\var{age_cat_coarse_(24,34]_sex_F_comm_type_inland_p_phsc_participants}\%)\\
+(24, 34] & F & Fishing  & \var{age_cat_coarse_(24,34]_sex_F_comm_type_fishing_n_viremic_participant_visits} (\var{age_cat_coarse_(24,34]_sex_F_comm_type_fishing_p_viremic_participant_visits}\%)   & \var{age_cat_coarse_(24,34]_sex_F_comm_type_fishing_n_phsc_participants} (\var{age_cat_coarse_(24,34]_sex_F_comm_type_fishing_p_phsc_participants}\%)\\
+(24, 34] & M & Inland  & \var{age_cat_coarse_(24,34]_sex_M_comm_type_inland_n_viremic_participant_visits} (\var{age_cat_coarse_(24,34]_sex_M_comm_type_inland_p_viremic_participant_visits}\%)   & \var{age_cat_coarse_(24,34]_sex_M_comm_type_inland_n_phsc_participants} (\var{age_cat_coarse_(24,34]_sex_M_comm_type_inland_p_phsc_participants}\%)\\
+(24, 34] & M & Fishing  & \var{age_cat_coarse_(24,34]_sex_M_comm_type_fishing_n_viremic_participant_visits} (\var{age_cat_coarse_(24,34]_sex_M_comm_type_fishing_p_viremic_participant_visits}\%)  & \var{age_cat_coarse_(24,34]_sex_M_comm_type_fishing_n_phsc_participants} (\var{age_cat_coarse_(24,34]_sex_M_comm_type_fishing_p_phsc_participants}\%)\\
+(34, 49] & F & Inland  & \var{age_cat_coarse_(34,49]_sex_F_comm_type_inland_n_viremic_participant_visits} (\var{age_cat_coarse_(34,49]_sex_F_comm_type_inland_p_viremic_participant_visits}\%)   & \var{age_cat_coarse_(34,49]_sex_F_comm_type_inland_n_phsc_participants} (\var{age_cat_coarse_(34,49]_sex_F_comm_type_inland_p_phsc_participants}\%)\\
+(34, 49] & F & Fishing  & \var{age_cat_coarse_(34,49]_sex_F_comm_type_fishing_n_viremic_participant_visits} (\var{age_cat_coarse_(34,49]_sex_F_comm_type_fishing_p_viremic_participant_visits}\%)  & \var{age_cat_coarse_(34,49]_sex_F_comm_type_fishing_n_phsc_participants} (\var{age_cat_coarse_(34,49]_sex_F_comm_type_fishing_p_phsc_participants}\%)\\
+(34, 49] & M & Inland  & \var{age_cat_coarse_(34,49]_sex_M_comm_type_inland_n_viremic_participant_visits} (\var{age_cat_coarse_(34,49]_sex_M_comm_type_inland_p_viremic_participant_visits}\%)   & \var{age_cat_coarse_(34,49]_sex_M_comm_type_inland_n_phsc_participants} (\var{age_cat_coarse_(34,49]_sex_M_comm_type_inland_p_phsc_participants}\%) \\
+(34, 49] & M & Fishing  & \var{age_cat_coarse_(34,49]_sex_M_comm_type_fishing_n_viremic_participant_visits} (\var{age_cat_coarse_(34,49]_sex_M_comm_type_fishing_p_viremic_participant_visits}\%)   & \var{age_cat_coarse_(34,49]_sex_M_comm_type_fishing_n_phsc_participants} (\var{age_cat_coarse_(34,49]_sex_M_comm_type_fishing_p_phsc_participants}\%) \\
+\hline
+\end{tabular}
+\end{table}
+\end{document}

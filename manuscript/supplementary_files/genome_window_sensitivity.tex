@@ -7,6 +7,9 @@
 % textcomp package and marvosym package for additional characters
 \usepackage{textcomp,marvosym}
 
+\bibliographystyle{plos2015}
+
+
 % line numbers
 \usepackage[right]{lineno}
 
@@ -64,7 +67,7 @@
 % Title must be 250 characters or less.
 \begin{flushleft}
 
-{\Large\textbf\newline{Quantifying prevalence and risk factors of HIV multiple infection in Uganda from cross-sectional population-based deep-sequence data \\ \medskip \large Supplementary File 5: Sensitivity of results to choice of non-overlapping genome windows} 
+{\Large\textbf\newline{Quantifying prevalence and risk factors of HIV multiple infection in Uganda from population-based deep-sequence data \\ \medskip \large Supplementary File 5: Sensitivity of results to choice of genome windows} 
 %
 %
 % Please use "sentence case" for title and headings (capitalize only the first word in a title (or heading), the first word in a subtitle (or subheading), and any proper nouns).
@@ -130,7 +133,8 @@ $\dagger$ Corresponding authors mmart108@jhmi.edu, mgrabow2@jhu.edu, oliver.ratm
 \end{flushleft}
 
 \section{Choice of genome window}
-Phylogenetic trees from the HIV deep-sequence reads generated from \var{n_unique_N_obs_gt_0} Rakai Community Cohort Study participants living with viremic HIV using \textit{phyloscanner}. In total, phylogenetic trees were inferred using data from \var{n_all_windows} \var{phsc_window_size} base pair (bp) overlapping windows with a \var{phsc_step_size} bp step between windows. To generate a set of independent data points from each sequenced participant-visit we first downsampled the \var{n_all_windows} overlapping windows to a set of \var{n_unique_windows} \var{phsc_window_size} bp windows beginning at position 800 in the HXB2 (GenBank: K03455.1) genome.  Summarized data in the form of the genome coverage in the phyloscanner output ($N^{obs}_i$) and the number of windows with multiple phylogenetic subgraphs ($MI^{obs}_i$) was highly correlated between the set of full windows and the set of non-overlapping windows (Pearson's $\rho=$ \var{all_unique_n_corr}, \var{all_unique_mi_corr}, respectively, Genome Window Fig~\ref{all_uniq_corr}).
+Phylogenetic trees from the HIV deep-sequence reads generated from \var{n_unique_N_obs_gt_0} Rakai Community Cohort Study participants living with viremic HIV using \textit{phyloscanner}. In total, phylogenetic trees were inferred using data from \var{n_all_windows} \var{phsc_window_size} base pair (bp) overlapping windows with a \var{phsc_step_size} bp step between windows. To generate a set of independent data points from each sequenced participant-visit we first downsampled the \var{n_all_windows} overlapping windows to a set of \var{n_unique_windows} \var{phsc_window_size} bp windows beginning at position 800 in the HXB2 (GenBank: K03455.1) genome.  Summarized data in the form of the genome coverage in the phyloscanner output ($N^{obs}_i$) and the number of windows with multiple phylogenetic subgraphs ($MI^{obs}_i$) was highly correlated between the set of full windows and the set of non-overlapping windows (Pearson's $\rho=$ \var{all_unique_n_corr}, \var{all_unique_mi_corr}, respectively, Genome Window Fig~\ref{all_uniq_corr}). \par
+Additionally, we simulate synthetic amplicon data by selecting data from \textit{phyloscanner} windows spanning the \textit{p24} and \textit{gp41} regions of the HIV genome. Specifically, we aim to generate data covering nucleotides 1,427 through 1,816 (\textit{p24}) and 7,941 through 8,264 (\textit{gp41}) of HXB2 based on the amplicons used for earlier studies of HIV multiple infection \cite{redd2011, redd2012, redd2014}. As these regions are larger than our 250 bp \textit{phyloscanner} windows we first take data from the fist and the last window that are entirely contained within each target region. Sequenced participant-visits were assigned $N^\text{obs}_{i,r} = 1$ (where $r$ indicates the amplicon region) in each region if $N^\text{obs}_{i,w} = 1$ for both of the selected windows in a given amplicon region. We set $MI^\text{obs}_{i,r} = 1$ if $MI^\text{obs}_{i,w} =1 $ in either of the selected windows spanning a given amplicon region. 
 
 \begin{figure}[!ht]
  \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/all_uniq_corr.pdf}}{}
@@ -149,7 +153,7 @@ Based on the window size and window step size, there are 10 potential sets of no
 \end{figure}
 
 \section{Sensitivity of results to non-overlapping windows}
-Finally, we fit our inference model accounting for partial sequencing success, false negative multiple subgraph windows, and false positive multiple subgraph windows to data from the two sets of non-overlapping genome windows (Table~\ref{empirical_full_table}-\ref{empirical_full_alt_table}). We note that parameter estimates from the two model fits are highly similar, indicating that our results are not particularly sensitive to the exact choice of genome window sets. 
+Finally, we fit our inference model accounting for partial sequencing success, false negative multiple subgraph windows, and false positive multiple subgraph windows to data from the two sets of non-overlapping genome windows (Table~\ref{empirical_age_sex_comm_table}-\ref{empirical_age_sex_comm_alt_table}). We note that parameter estimates from the two model fits are highly similar, indicating that our results are not particularly sensitive to the exact choice of genome window sets. 
 
 
 \begin{table}[hbp!]
@@ -158,57 +162,118 @@ Finally, we fit our inference model accounting for partial sequencing success, f
 \begin{tabular}[t]{|l|c|c|c|c|c|}
 \hline
 Parameter & Prior & Median (95\% HPD) & Bulk ESS & Tail ESS & $\hat{R}$ \\ \thickhline
-$\alpha_0$ & Normal(0,$2^2$) & 
-  \var{empirical_full_fit_logit_prob_seq_baseline_median} 
-    (\var{empirical_full_fit_logit_prob_seq_baseline_lower}, \var{empirical_full_fit_logit_prob_seq_baseline_upper}) & 
-  \var{empirical_full_fit_logit_prob_seq_baseline_bulk_ess} & 
-  \var{empirical_full_fit_logit_prob_seq_baseline_tail_ess} & 
-  \var{empirical_full_fit_logit_prob_seq_baseline_rhat} \\ \hline
-  $\alpha^{bait}$ & Normal(0,$2^2$) & 
-  \var{empirical_full_fit_logit_prob_seq_coeffs1_median}
-    (\var{empirical_full_fit_logit_prob_seq_coeffs1_lower}, \var{empirical_full_fit_logit_prob_seq_coeffs1_upper}) & 
-  \var{empirical_full_fit_logit_prob_seq_coeffs1_bulk_ess} & 
-  \var{empirical_full_fit_logit_prob_seq_coeffs1_tail_ess} & 
-  \var{empirical_full_fit_logit_prob_seq_coeffs1_rhat} \\ \hline
-  $\alpha^{amplicon-vl}$ & Normal(0,$2^2$) & 
-  \var{empirical_full_fit_logit_prob_seq_coeffs2_median}
-    (\var{empirical_full_fit_logit_prob_seq_coeffs2_lower}, \var{empirical_full_fit_logit_prob_seq_coeffs2_upper}) & 
-  \var{empirical_full_fit_logit_prob_seq_coeffs2_bulk_ess} & 
-  \var{empirical_full_fit_logit_prob_seq_coeffs2_tail_ess} & 
-  \var{empirical_full_fit_logit_prob_seq_coeffs2_rhat} \\ \hline
-  $\alpha^{bait-vl}$ & Normal(0,$2^2$) & 
-  \var{empirical_full_fit_logit_prob_seq_coeffs2_median}
-    (\var{empirical_full_fit_logit_prob_seq_coeffs2_lower}, \var{empirical_full_fit_logit_prob_seq_coeffs2_upper}) & 
-  \var{empirical_full_fit_logit_prob_seq_coeffs2_bulk_ess} & 
-  \var{empirical_full_fit_logit_prob_seq_coeffs2_tail_ess} & 
-  \var{empirical_full_fit_logit_prob_seq_coeffs2_rhat} \\ \hline
+$\alpha_0$ & Normal(0,$2^2$) &
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_baseline_median} 
+    (\var{empirical_age_sex_comm_fit_logit_prob_seq_baseline_lower}, \var{empirical_age_sex_comm_fit_logit_prob_seq_baseline_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_baseline_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_baseline_tail_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_baseline_rhat} \\ \hline
+$\alpha_1$ (amplicon) & $2\times\text{stz-MVN}_1(0,1)$
+ &
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs1_median}
+    (\var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs1_lower}, \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs1_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs1_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs1_tail_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs1_rhat} \\ \hline
+$\alpha_2$ (bait-capture) & $2\times\text{stz-MVN}_1(0,1)$ &
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs2_median}
+    (\var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs2_lower}, \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs2_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs2_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs2_tail_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs2_rhat} \\ \hline
+$\alpha_3$ (log$_{10}$ copies/mL) & Normal(0,$2^2$) &
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs3_median}
+    (\var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs3_lower}, \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs3_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs3_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs3_tail_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs3_rhat} \\ \hline
+
+$\alpha_4$ (amplicon $\times$ log$_{10}$ copies/mL) & $2\times\text{stz-MVN}_2(0,1)$ &
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs4_median}
+    (\var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs4_lower}, \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs4_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs4_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs4_tail_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs4_rhat} \\ \hline
+
+
+$\alpha_4$ (bait-capture $\times$ log$_{10}$ copies/mL) & $2\times\text{stz-MVN}_2(0,1)$ &
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs5_median}
+    (\var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs5_lower}, \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs5_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs5_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs5_tail_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_coeffs5_rhat} \\ \hline
 $\sigma_\alpha$ & Half-Cauchy(0,1) & 
-  \var{empirical_full_fit_logit_prob_seq_ind_sd_median}
-    (\var{empirical_full_fit_logit_prob_seq_ind_sd_lower}, \var{empirical_full_fit_logit_prob_seq_ind_sd_upper}) & 
-  \var{empirical_full_fit_logit_prob_seq_ind_sd_bulk_ess} & 
-  \var{empirical_full_fit_logit_prob_seq_ind_sd_tail_ess} &
-  \var{empirical_full_fit_logit_prob_seq_ind_sd_rhat} \\ \hline
-$\delta_0$ & Normal(0,$3.16^2$) & 
-  \var{empirical_full_fit_logit_prob_MI_median}
-    (\var{empirical_full_fit_logit_prob_MI_lower}, \var{empirical_full_fit_logit_prob_MI_upper}) & 
-  \var{empirical_full_fit_logit_prob_MI_bulk_ess} & 
-  \var{empirical_full_fit_logit_prob_MI_tail_ess} & 
-  \var{empirical_full_fit_logit_prob_MI_rhat} \\ \hline
-logit($\lambda$) & Normal(0,1) & 
-  \var{empirical_full_fit_logit_prob_MI_fnr_median}
-    (\var{empirical_full_fit_logit_prob_MI_fnr_lower}, \var{empirical_full_fit_logit_prob_MI_fnr_upper}) & 
-  \var{empirical_full_fit_logit_prob_MI_fnr_bulk_ess} & 
-  \var{empirical_full_fit_logit_prob_MI_fnr_tail_ess} & 
-  \var{empirical_full_fit_logit_prob_MI_fnr_rhat} \\ \hline
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_ind_sd_median}
+    (\var{empirical_age_sex_comm_fit_logit_prob_seq_ind_sd_lower}, \var{empirical_age_sex_comm_fit_logit_prob_seq_ind_sd_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_ind_sd_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_ind_sd_tail_ess} &
+  \var{empirical_age_sex_comm_fit_logit_prob_seq_ind_sd_rhat} \\ \hline
+$\delta_0$ & Normal(0,$3.16^2$) &
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_baseline_median}
+    (\var{empirical_age_sex_comm_fit_logit_prob_mi_baseline_lower}, \var{empirical_age_sex_comm_fit_logit_prob_mi_baseline_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_baseline_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_baseline_tail_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_baseline_rhat} \\ \hline
+$\beta_1$ ((14,24] years) & $\text{stz-MVN}_3(0,1)$ &  
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs1_median}
+    (\var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs1_lower}, \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs1_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs1_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs1_tail_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs1_rhat} \\ \hline
+$\beta_2$ ((24,34] years)) & $\text{stz-MVN}_3(0,1)$ &  
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs2_median}
+    (\var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs2_lower}, \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs2_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs2_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs2_tail_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs2_rhat} \\ \hline
+$\beta_3$ ((34,49] years) & $\text{stz-MVN}_3(0,1)$ &  
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs3_median}
+    (\var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs3_lower}, \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs3_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs3_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs3_tail_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs3_rhat} \\ \hline
+$\beta_4$ (women) & $\text{stz-MVN}_4(0,1)$ &  
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs4_median}
+    (\var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs4_lower}, \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs4_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs4_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs4_tail_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs4_rhat} \\ \hline
+
+$\beta_5$ (men) & $\text{stz-MVN}_4(0,1)$ &  
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs5_median}
+    (\var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs5_lower}, \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs5_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs5_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs5_tail_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs5_rhat} \\ \hline
+
+$\beta_6$ (fishing) & $\text{stz-MVN}_5(0,1)$ &  
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs6_median}
+    (\var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs6_lower}, \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs6_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs6_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs6_tail_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs6_rhat} \\ \hline
+
+$\beta_7$ (inland) & $\text{stz-MVN}_5(0,1)$ &  
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs7_median}
+    (\var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs7_lower}, \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs7_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs7_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs7_tail_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_coeffs7_rhat} \\ \hline
+logit($\lambda$) & Normal(0,1)[,2.2] & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_fnr_median}
+    (\var{empirical_age_sex_comm_fit_logit_prob_mi_fnr_lower}, \var{empirical_age_sex_comm_fit_logit_prob_mi_fnr_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_fnr_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_fnr_tail_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_fnr_rhat} \\ \hline
 logit($\epsilon$) & Normal(0,1) & 
-  \var{empirical_full_fit_logit_prob_MI_fpr_median}
-    (\var{empirical_full_fit_logit_prob_MI_fpr_lower}, \var{empirical_full_fit_logit_prob_MI_fpr_upper}) & 
-  \var{empirical_full_fit_logit_prob_MI_fpr_bulk_ess} & 
-  \var{empirical_full_fit_logit_prob_MI_fpr_tail_ess} & 
-  \var{empirical_full_fit_logit_prob_MI_fpr_rhat} \\ \hline
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_fpr_median}
+    (\var{empirical_age_sex_comm_fit_logit_prob_mi_fpr_lower}, \var{empirical_age_sex_comm_fit_logit_prob_mi_fpr_upper}) & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_fpr_bulk_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_fpr_tail_ess} & 
+  \var{empirical_age_sex_comm_fit_logit_prob_mi_fpr_rhat} \\ \hline
 \end{tabular}
-\caption{{\bf Parameter estimates for full model fit to deep sequence data from \protect \var{empirical_full_n_participant_visits} RCCS participants living with viremic HIV.} ESS = effective sample size. HPD = highest posterior density. }
-\label{empirical_full_table}
+\caption{{\bf Parameter estimates for full model fit to deep-sequence data from \protect \var{empirical_age_sex_comm_n_participant_visits} RCCS participants living with viremic HIV with age, sex, and community type as putative risk factors for harboring multiple infections.} ESS = effective sample size. HPD = highest posterior density. stz-MVN = sum-to-zero multivariate-Normal distribution. } 
+\label{empirical_age_sex_comm_table}
 \end{table}
 
 
@@ -217,58 +282,124 @@ logit($\epsilon$) & Normal(0,1) &
 \centering
 \begin{tabular}[t]{|l|c|c|c|c|c|}
 \hline
-Parameter  & Prior & Median (95\% HPD) & Bulk ESS & Tail ESS & $\hat{R}$ \\ \thickhline
+Parameter & Prior & Median (95\% HPD) & Bulk ESS & Tail ESS & $\hat{R}$ \\ \thickhline
+
 $\alpha_0$ & Normal(0,$2^2$) &
-  \var{empirical_full_alt_fit_logit_prob_seq_baseline_median} 
-    (\var{empirical_full_alt_fit_logit_prob_seq_baseline_lower}, \var{empirical_full_alt_fit_logit_prob_seq_baseline_upper}) & 
-  \var{empirical_full_alt_fit_logit_prob_seq_baseline_bulk_ess} & 
-  \var{empirical_full_alt_fit_logit_prob_seq_baseline_tail_ess} & 
-  \var{empirical_full_alt_fit_logit_prob_seq_baseline_rhat} \\ \hline
-  $\alpha^{bait}$ & Normal(0,$2^2$) &
-  \var{empirical_full_alt_fit_logit_prob_seq_coeffs1_median}
-    (\var{empirical_full_alt_fit_logit_prob_seq_coeffs1_lower}, \var{empirical_full_alt_fit_logit_prob_seq_coeffs1_upper}) & 
-  \var{empirical_full_alt_fit_logit_prob_seq_coeffs1_bulk_ess} & 
-  \var{empirical_full_alt_fit_logit_prob_seq_coeffs1_tail_ess} & 
-  \var{empirical_full_alt_fit_logit_prob_seq_coeffs1_rhat} \\ \hline
-  $\alpha^{amplicon-vl}$ & Normal(0,$2^2$) &
-  \var{empirical_full_alt_fit_logit_prob_seq_coeffs2_median}
-    (\var{empirical_full_alt_fit_logit_prob_seq_coeffs2_lower}, \var{empirical_full_alt_fit_logit_prob_seq_coeffs2_upper}) & 
-  \var{empirical_full_alt_fit_logit_prob_seq_coeffs2_bulk_ess} & 
-  \var{empirical_full_alt_fit_logit_prob_seq_coeffs2_tail_ess} & 
-  \var{empirical_full_alt_fit_logit_prob_seq_coeffs2_rhat} \\ \hline
-  $\alpha^{bait-vl}$ & Normal(0,$2^2$) &
-  \var{empirical_full_alt_fit_logit_prob_seq_coeffs3_median}
-    (\var{empirical_full_alt_fit_logit_prob_seq_coeffs3_lower}, \var{empirical_full_alt_fit_logit_prob_seq_coeffs3_upper}) & 
-  \var{empirical_full_alt_fit_logit_prob_seq_coeffs3_bulk_ess} & 
-  \var{empirical_full_alt_fit_logit_prob_seq_coeffs3_tail_ess} & 
-  \var{empirical_full_alt_fit_logit_prob_seq_coeffs3_rhat} \\ \hline
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_baseline_median} 
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_seq_baseline_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_baseline_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_baseline_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_baseline_tail_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_baseline_rhat} \\ \hline
+$\alpha_1$ (amplicon) & $2\times\text{stz-MVN}_1(0,1)$ &
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs1_median}
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs1_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs1_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs1_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs1_tail_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs1_rhat} \\ \hline
+$\alpha_2$ (bait-capture) & $2\times\text{stz-MVN}_1(0,1)$ &
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs2_median}
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs2_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs2_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs2_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs2_tail_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs2_rhat} \\ \hline
+$\alpha_3$ (log$_{10}$ copies/mL) & Normal(0,$2^2$) &
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs3_median}
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs3_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs3_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs3_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs3_tail_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs3_rhat} \\ \hline
+
+$\alpha_4$ (amplicon $\times$ log$_{10}$ copies/mL) & $2\times\text{stz-MVN}_2(0,1)$&
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs4_median}
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs4_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs4_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs4_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs4_tail_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs4_rhat} \\ \hline
+
+
+$\alpha_4$ (bait-capture $\times$ log$_{10}$ copies/mL) & $2\times\text{stz-MVN}_2(0,1)$ &
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs5_median}
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs5_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs5_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs5_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs5_tail_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_coeffs5_rhat} \\ \hline
 $\sigma_\alpha$ & Half-Cauchy(0,1) & 
-  \var{empirical_full_alt_fit_logit_prob_seq_ind_sd_median}
-    (\var{empirical_full_alt_fit_logit_prob_seq_ind_sd_lower}, \var{empirical_full_alt_fit_logit_prob_seq_ind_sd_upper}) & 
-  \var{empirical_full_alt_fit_logit_prob_seq_ind_sd_bulk_ess} & 
-  \var{empirical_full_alt_fit_logit_prob_seq_ind_sd_tail_ess} &
-  \var{empirical_full_alt_fit_logit_prob_seq_ind_sd_rhat} \\ \hline
-$\delta_0$ & Normal(0,$3.16^2$) & 
-  \var{empirical_full_alt_fit_logit_prob_MI_median}
-    (\var{empirical_full_alt_fit_logit_prob_MI_lower}, \var{empirical_full_alt_fit_logit_prob_MI_upper}) & 
-  \var{empirical_full_alt_fit_logit_prob_MI_bulk_ess} & 
-  \var{empirical_full_alt_fit_logit_prob_MI_tail_ess} & 
-  \var{empirical_full_alt_fit_logit_prob_MI_rhat} \\ \hline
-logit($\lambda$) & Normal(0,1) & 
-  \var{empirical_full_alt_fit_logit_prob_MI_fnr_median}
-    (\var{empirical_full_alt_fit_logit_prob_MI_fnr_lower}, \var{empirical_full_alt_fit_logit_prob_MI_fnr_upper}) & 
-  \var{empirical_full_alt_fit_logit_prob_MI_fnr_bulk_ess} & 
-  \var{empirical_full_alt_fit_logit_prob_MI_fnr_tail_ess} & 
-  \var{empirical_full_alt_fit_logit_prob_MI_fnr_rhat} \\ \hline
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_ind_sd_median}
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_seq_ind_sd_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_ind_sd_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_ind_sd_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_ind_sd_tail_ess} &
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_seq_ind_sd_rhat} \\ \hline
+$\delta_0$ & Normal(0,$3.16^2$) &
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_baseline_median}
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_mi_baseline_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_baseline_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_baseline_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_baseline_tail_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_baseline_rhat} \\ \hline
+$\beta_1$ ((14,24] years) & $\text{stz-MVN}_3(0,1)$ &  
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs1_median}
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs1_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs1_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs1_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs1_tail_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs1_rhat} \\ \hline
+$\beta_2$ ((24,34] years)) & $\text{stz-MVN}_3(0,1)$ &  
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs2_median}
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs2_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs2_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs2_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs2_tail_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs2_rhat} \\ \hline
+$\beta_3$ ((34,49] years) & $\text{stz-MVN}_3(0,1)$ &  
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs3_median}
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs3_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs3_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs3_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs3_tail_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs3_rhat} \\ \hline
+$\beta_4$ (women) & $\text{stz-MVN}_4(0,1)$ &  
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs4_median}
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs4_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs4_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs4_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs4_tail_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs4_rhat} \\ \hline
+
+$\beta_5$ (men) &$\text{stz-MVN}_4(0,1)$&  
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs5_median}
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs5_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs5_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs5_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs5_tail_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs5_rhat} \\ \hline
+
+$\beta_6$ (fishing) &$\text{stz-MVN}_5(0,1)$ &  
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs6_median}
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs6_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs6_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs6_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs6_tail_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs6_rhat} \\ \hline
+
+$\beta_7$ (inland) & $\text{stz-MVN}_5(0,1)$ &  
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs7_median}
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs7_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs7_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs7_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs7_tail_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_coeffs7_rhat} \\ \hline
+logit($\lambda$) & Normal(0,1)[,2.2] & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_fnr_median}
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_mi_fnr_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_fnr_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_fnr_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_fnr_tail_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_fnr_rhat} \\ \hline
 logit($\epsilon$) & Normal(0,1) & 
-  \var{empirical_full_alt_fit_logit_prob_MI_fpr_median}
-    (\var{empirical_full_alt_fit_logit_prob_MI_fpr_lower}, \var{empirical_full_alt_fit_logit_prob_MI_fpr_upper}) & 
-  \var{empirical_full_alt_fit_logit_prob_MI_fpr_bulk_ess} & 
-  \var{empirical_full_alt_fit_logit_prob_MI_fpr_tail_ess} & 
-  \var{empirical_full_alt_fit_logit_prob_MI_fpr_rhat} \\ \hline
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_fpr_median}
+    (\var{empirical_age_sex_comm_alt_fit_logit_prob_mi_fpr_lower}, \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_fpr_upper}) & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_fpr_bulk_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_fpr_tail_ess} & 
+  \var{empirical_age_sex_comm_alt_fit_logit_prob_mi_fpr_rhat} \\ \hline
 \end{tabular}
-\caption{{\bf Parameter estimates for full model fit to deep sequence data from \protect \var{empirical_full_n_participant_visits} RCCS participants living with viremic HIV from alternative non-overlapping genome windows.} ESS = effective sample size. HPD = highest posterior density. }
-\label{empirical_full_alt_table}
+\caption{{\bf Parameter estimates for full model fit to deep-sequence data from \protect \var{empirical_age_sex_comm_n_participant_visits} RCCS participants living with viremic HIV with age, sex, and community type as putative risk factors for harboring multiple infections using alternative non-overlapping windows.} ESS = effective sample size. HPD = highest posterior density. stz-MVN = sum-to-zero multivariate-Normal distribution. } 
+\label{empirical_age_sex_comm_alt_table}
 \end{table}
 
+
+\newpage
+
+\linespread{1}
+\bibliography{references.bib}
 \end{document}

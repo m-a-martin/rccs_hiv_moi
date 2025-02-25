@@ -85,6 +85,9 @@ ggsave(paste(c('figures/', args$out,'.pdf'), collapse=''), p, width=15,
 	height= 5.45 + (0.3*ceiling(nrow(plot_params)/args$ncolParams) * 10.9))
 
 
+ggsave(paste(c('figures/tif/', args$out,'.tif'), collapse=''), p, device="tif", width=15, 
+	height= 5.45 + (0.3*ceiling(nrow(plot_params)/args$ncolParams) * 10.9))
+
 
 
 

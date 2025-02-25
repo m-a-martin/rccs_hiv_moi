@@ -174,71 +174,86 @@ $\dagger$ Corresponding authors mmart108@jhmi.edu, mgrabow2@jhu.edu, oliver.ratm
 \caption{{\bf Comparison of posterior and prior distributions of parameters in full model fit to simulated data with partial sequencing success, false positive or false negative multiple subgraph windows, and a binary risk factor for harboring multiple infection.} Median is plotted as the central estimate and horizontal bars extend to the 95\% and 50\% HPD. Some horizontal bars do not extend beyond the central point. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
 \end{figure}
 
-% empirical full
+% empirical age sex comm
 \begin{figure}[!ht]
- \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_full_trace.pdf}}{}
-\caption{{\bf MCMC trace plots for parameters in full model fit to deep sequence data generated from \protect \var{empirical_full_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Independent chains are shown in shades of grey. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
+ \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_age_sex_comm_trace.pdf}}{}
+\caption{{\bf MCMC trace plots for parameters in extended model with age, sex, and community type as risk factors fit to deep sequence data generated from \protect \var{empirical_age_sex_comm_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Independent chains are shown in shades of grey. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
 \end{figure}
 
 \begin{figure}[!ht]
- \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_full_pairs.pdf}}{}
-\caption{{\bf MCMC pairs plots for parameters in full model fit to deep sequence data generated from \protect \var{empirical_full_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Independent chains are shown in shades of grey. Warm-up iterations are excluded. Includes a sample of 250 iterations per chain. MI = multiple infection. }
+ \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_age_sex_comm_pairs.pdf}}{}
+\caption{{\bf MCMC pairs plots for parameters in extended model with age, sex, and community type as risk factors fit to deep sequence data generated from \protect \var{empirical_age_sex_comm_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Independent chains are shown in shades of grey. Warm-up iterations are excluded. Includes a sample of 250 iterations per chain. MI = multiple infection. }
 \end{figure}
 
 \begin{figure}[!ht]
- \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_full_prior.pdf}}{}
-\caption{{\bf Comparison of posterior and prior distributions of parameters in full model fit to deep sequence data generated from \protect \var{empirical_full_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Median is plotted as the central estimate and horizontal bars extend to the 95\% and 50\% HPD. Some horizontal bars do not extend beyond the central point. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
+ \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_age_sex_comm_prior.pdf}}{}
+\caption{{\bf Comparison of posterior and prior distributions of parameters in extended model with age, sex, and community type as risk factors fit to deep sequence data generated from \protect \var{empirical_age_sex_comm_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Median is plotted as the central estimate and horizontal bars extend to the 95\% and 50\% HPD. Some horizontal bars do not extend beyond the central point. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
 \end{figure}
 
-% empirical comm_type
+% empirical age sex comm incl minor
 \begin{figure}[!ht]
- \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_commtype_trace.pdf}}{}
-\caption{{\bf MCMC trace plots for parameters in extended model with community type as a risk factor fit to deep sequence data generated from \protect \var{empirical_full_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Independent chains are shown in shades of grey. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
-\end{figure}
-
-\begin{figure}[!ht]
- \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_commtype_pairs.pdf}}{}
-\caption{{\bf MCMC pairs plots for parameters in extended model with community type as a risk factor fit to deep sequence data generated from \protect \var{empirical_full_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Independent chains are shown in shades of grey. Warm-up iterations are excluded. Includes a sample of 250 iterations per chain. MI = multiple infection. }
+ \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_age_sex_comm_incl_minor_trace.pdf}}{}
+\caption{{\bf MCMC trace plots for parameters in extended model with age, sex, and community type as risk factors fit to deep sequence data generated from \protect \var{empirical_age_sex_comm_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Includes minor subgraphs supported in $<1\%$ of reads in a given window so long as they are supported by at least three reads. Independent chains are shown in shades of grey. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
 \end{figure}
 
 \begin{figure}[!ht]
- \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_commtype_prior.pdf}}{}
-\caption{{\bf Comparison of posterior and prior distributions of parameters in extended model with community type as a risk factor fit to deep sequence data generated from \protect \var{empirical_full_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Median is plotted as the central estimate and horizontal bars extend to the 95\% and 50\% HPD. Some horizontal bars do not extend beyond the central point. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
+ \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_age_sex_comm_incl_minor_pairs.pdf}}{}
+\caption{{\bf MCMC pairs plots for parameters in extended model with age, sex, and community type as risk factors fit to deep sequence data generated from \protect \var{empirical_age_sex_comm_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Includes minor subgraphs supported in $<1\%$ of reads in a given window so long as they are supported by at least three reads. Independent chains are shown in shades of grey. Warm-up iterations are excluded. Includes a sample of 250 iterations per chain. MI = multiple infection. }
+\end{figure}
+
+\begin{figure}[!ht]
+ \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_age_sex_comm_prior.pdf}}{}
+\caption{{\bf Comparison of posterior and prior distributions of parameters in extended model with age, sex, and community type as risk factors fit to deep sequence data generated from \protect \var{empirical_age_sex_comm_incl_minor_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Includes minor subgraphs supported in $<1\%$ of reads in a given window so long as they are supported by at least three reads. Median is plotted as the central estimate and horizontal bars extend to the 95\% and 50\% HPD. Some horizontal bars do not extend beyond the central point. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
+\end{figure}
+
+% empirical age sex comm amplicon
+\begin{figure}[!ht]
+ \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_age_sex_comm_amplicon_trace.pdf}}{}
+\caption{{\bf MCMC trace plots for parameters in extended model with age, sex, and community type as risk factors fit to deep sequence data generated from \protect \var{empirical_age_sex_comm_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Includes data from genome windows spanning the \textit{p24} (1427 - 1816) and \textit{gp41} (7941 - 8264) regions. Independent chains are shown in shades of grey. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
+\end{figure}
+
+\begin{figure}[!ht]
+ \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_age_sex_comm_amplicon_pairs.pdf}}{}
+\caption{{\bf MCMC pairs plots for parameters in extended model with age, sex, and community type as risk factors fit to deep sequence data generated from \protect \var{empirical_age_sex_comm_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Includes data from genome windows spanning the \textit{p24} (1427 - 1816) and \textit{gp41} (7941 - 8264) regions. Independent chains are shown in shades of grey. Warm-up iterations are excluded. Includes a sample of 250 iterations per chain. MI = multiple infection. }
+\end{figure}
+
+\begin{figure}[!ht]
+ \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_age_sex_comm_prior.pdf}}{}
+\caption{{\bf Comparison of posterior and prior distributions of parameters in extended model with age, sex, and community type as risk factors fit to deep sequence data generated from \protect \var{empirical_age_sex_comm_amplicon_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Includes data from genome windows spanning the \textit{p24} (1427 - 1816) and \textit{gp41} (7941 - 8264) regions. Median is plotted as the central estimate and horizontal bars extend to the 95\% and 50\% HPD. Some horizontal bars do not extend beyond the central point. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
 \end{figure}
 
 % empirical seq_tech
 \begin{figure}[!ht]
  \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_seqtech_trace.pdf}}{}
-\caption{{\bf MCMC trace plots for parameters in extended model with deep-sequencing protocol as a risk factor fit to deep sequence data generated from \protect \var{empirical_full_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Independent chains are shown in shades of grey. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
+\caption{{\bf MCMC trace plots for parameters in extended model with deep-sequencing protocol as a risk factor fit to deep sequence data generated from \protect \var{empirical_seq_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Independent chains are shown in shades of grey. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
 \end{figure}
 
 \begin{figure}[!ht]
  \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_seqtech_pairs.pdf}}{}
-\caption{{\bf MCMC pairs plots for parameters in extended model withdeep-sequencing protocol as a risk factor fit to deep sequence data generated from \protect \var{empirical_full_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Independent chains are shown in shades of grey. Warm-up iterations are excluded. Includes a sample of 250 iterations per chain. MI = multiple infection. }
+\caption{{\bf MCMC pairs plots for parameters in extended model withdeep-sequencing protocol as a risk factor fit to deep sequence data generated from \protect \var{empirical_seq_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Independent chains are shown in shades of grey. Warm-up iterations are excluded. Includes a sample of 250 iterations per chain. MI = multiple infection. }
 \end{figure}
 
 \begin{figure}[!ht]
  \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_seqtech_prior.pdf}}{}
-\caption{{\bf Comparison of posterior and prior distributions of parameters in extended model with sequencing technology as a risk factor fit to deep sequence data generated from \protect \var{empirical_full_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Median is plotted as the central estimate and horizontal bars extend to the 95\% and 50\% HPD. Some horizontal bars do not extend beyond the central point. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
+\caption{{\bf Comparison of posterior and prior distributions of parameters in extended model with sequencing technology as a risk factor fit to deep sequence data generated from \protect \var{empirical_seq_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Median is plotted as the central estimate and horizontal bars extend to the 95\% and 50\% HPD. Some horizontal bars do not extend beyond the central point. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
 \end{figure}
 
 
 % empirical seq_tech_comm_type
 \begin{figure}[!ht]
  \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_seqtech_comm_trace.pdf}}{}
-\caption{{\bf MCMC trace plots for parameters in extended model with deep-sequencing protocol and community type as a risk factor fit to deep sequence data generated from \protect \var{empirical_full_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Independent chains are shown in shades of grey. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
+\caption{{\bf MCMC trace plots for parameters in extended model with deep-sequencing protocol and community type as a risk factor fit to deep sequence data generated from \protect \var{empirical_comm_seq_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Independent chains are shown in shades of grey. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
 \end{figure}
 
 \begin{figure}[!ht]
  \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_seqtech_comm_pairs.pdf}}{}
-\caption{{\bf MCMC pairs plots for parameters in extended model withdeep-sequencing protocol and community type as a risk factor fit to deep sequence data generated from \protect \var{empirical_full_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Independent chains are shown in shades of grey. Warm-up iterations are excluded. Includes a sample of 250 iterations per chain. MI = multiple infection. }
+\caption{{\bf MCMC pairs plots for parameters in extended model withdeep-sequencing protocol and community type as a risk factor fit to deep sequence data generated from \protect \var{empirical_comm_seq_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Independent chains are shown in shades of grey. Warm-up iterations are excluded. Includes a sample of 250 iterations per chain. MI = multiple infection. }
 \end{figure}
 
 \begin{figure}[!ht]
  \ifthenelse{\boolean{includefigs}}{\includegraphics[width=1\textwidth]{../../figures/empirical_seqtech_comm_prior.pdf}}{}
-\caption{{\bf Comparison of posterior and prior distributions of parameters in extended model with sequencing technology and community type as a risk factor fit to deep sequence data generated from \protect \var{empirical_full_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Median is plotted as the central estimate and horizontal bars extend to the 95\% and 50\% HPD. Some horizontal bars do not extend beyond the central point. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
+\caption{{\bf Comparison of posterior and prior distributions of parameters in extended model with sequencing technology and community type as a risk factor fit to deep sequence data generated from \protect \var{empirical_comm_seq_n_participant_visits} Rakai Community Cohort Study participants living with viremic HIV.} Median is plotted as the central estimate and horizontal bars extend to the 95\% and 50\% HPD. Some horizontal bars do not extend beyond the central point. Warm-up iterations are excluded. MI = multiple infection. VL = viral load (log\textsubscript{10} copies/mL) standardized to mean = 0 and std. dev = 1. Std. dev. = standard deviation. }
 \end{figure}
-
 
 % empirical sexpever 
 \begin{figure}[!ht]

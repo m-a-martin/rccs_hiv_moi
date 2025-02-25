@@ -1,7 +1,7 @@
 param	label	simple_label
 logit_prob_seq_baseline	"expression(atop('logit(sequencing success):', paste('intercept (', alpha[0], ')')))"	alpha_0
 logit_prob_seq_coeffs[1]	"expression(atop('logit(sequencing success):', paste('VL coefficient (', alpha[1], ')')))"	alpha_1
-logit_prob_seq_ind_sd	"expression(atop('logit(sequencing success):', paste('random effects std. dev. (', sigma[alpha], ')')))"	sigma_alpha
+logit_prob_seq_ind_sd	"expression(atop('logit(sequencing success):', paste('random effects std. dev. (', sigma[ind], ')')))"	sigma_ind
 prob_mi_fnr	"expression(paste('false negative rate (', lambda, ')'))"	lambda
 prob_mi_fpr	"expression(paste('false positive rate (', epsilon, ')'))"	epsilon
 logit_prob_mi_baseline	"expression(atop('logit(prob. MI):', paste('intercept (', delta[0], ')')))"	delta_0

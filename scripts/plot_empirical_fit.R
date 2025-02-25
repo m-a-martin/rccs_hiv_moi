@@ -70,8 +70,9 @@ p = p1 / (p3 + plot_spacer() + p2 + plot_layout(widths=c(1, 0.05, 1))) +
 	theme(plot.tag = element_text(face = 'bold', color='#333333'))
 
 ggsave(paste(c('figures/', args$out,'.pdf'), collapse=''), p, width=10, height=8)
+ggsave(paste(c('figures/tif/', args$out,'.tif'), collapse=''), p, device="tif", width=10, height=8)
+
 
 p1 = plot_ind_posterior_pred(dat,fit, args$colors_dict, guide=TRUE, transform=FALSE) + xlab('participants')
 ggsave(paste(c('figures/', args$out,'_log.pdf'), collapse=''), p1, width=8, height=4)
-
 

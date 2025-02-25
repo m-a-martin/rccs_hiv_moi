@@ -395,5 +395,6 @@ p = plot_grid(
         labels=c('', '', 'c'), label_colour = "#333333")
 
 ggsave(paste(c('figures/', args$out, '.pdf'), collapse=''), p, width=8, height=10)
+ggsave(paste(c('figures/tif/', args$out,'.tif'), collapse=''), p, device="tif", width=8, height=10)
 
 

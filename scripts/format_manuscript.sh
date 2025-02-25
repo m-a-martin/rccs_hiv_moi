@@ -57,10 +57,7 @@ done
 #done
 
 echo "done here"
-lualatex $i
-bibtex ${i%".tex"}
-lualatex $i
-lualatex $i
+bash ../scripts/compile_manuscript.sh $i
 
 echo "done all"
 
